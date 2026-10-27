@@ -1,0 +1,25 @@
+# ---- Python ----
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ---- 本地临时 ----
+.tmp/
+*.log
+
+# ---- 工具/个人笔记 ----
+.workbuddy/
+
+# ---- 数据 ----
+# mFSTSP 为第三方公开数据集，按 README 用 git clone 拉取，不入库
+data/raw/mFSTSP/
+
+# ---- 论文 PDF ----
+# Elsevier 版权文件，禁止入库
+*.pdf
+
+# ---- 系统 ----
+.DS_Store
+Thumbs.db
