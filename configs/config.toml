@@ -1,0 +1,73 @@
+# 全局参数
+# 所有量在代码内部一律 SI：长度 m、时间 s、质量 kg、能量 kWh
+# 配置文件里允许用论文原单位（lb / km / h）书写，读取时统一换算（见 src/instance.py 的 UNITS）
+#
+# 标注 [论文给定] = 论文明确写出的值；[论文未给] = 论文没写，本项目自定，需在 README 说明
+
+[fleet]
+drone_speed_kmh = 65.0            # [论文给定] §5
+drone_payload_lb = 10.0           # [论文给定] §5
+drone_battery_kwh = 0.78          # [论文给定] §5
+eta_soc = 0.8                     # [论文未给] 单架次最大可用电量比例，0.8 起试
+truck_capacity_lb = 300.0         # [论文给定] §5
+launch_s = 60.0                   # [论文未给] 沿用 Murray & Raj (2020) §5.1
+recovery_s = 30.0                 # [论文未给] 同上
+service_s = 60.0                  # [论文未给] 无人机服务时间；卡车服务时间同取 60 s
+
+[energy]
+# 式(39)：E = d · (e_drone · L + b)
+# 注意：论文 Table 2 把 b 的单位标成 kWh，但代入式(39) 时 b 必须与 e_drone·L 同量纲 → 实际是 kWh/km
+e_drone_kwh_per_kg_km = 5.0e-4    # [论文未给]
+b_kwh_per_km = 0.05               # [论文未给] 空载单位距离能耗
+e_truck_l_per_km = 0.35           # [论文未给]
+
+[cost]
+c_drone_per_kwh = 0.15            # [论文未给]
+c_truck_per_l = 1.30              # [论文未给]
+c_customer_per_s = 0.0063         # [论文未给] ≈ 22.7 $/h
+# 以上 6 个量论文都只给了符号不给值。M6 会用 Table 3 的成本量级反推校准，
+# 校准前只做相对比较（Saving%、相对 truck-only 的降幅），不报绝对美元。
+
+[generation]
+# 论文 §5 只说「modified to include additional pickup demands, time window and no-fly zone constraints」
+# 具体规则完全未给，以下全部为本项目自定，写进 README 并固定种子
+seed = 20261027
+pickup_ratio = [0.0, 1.0]         # g_i ~ U(0, ratio·f_i)
+demand_rounding_lb = 0.5          # 需求向上取整到 0.5 lb
+time_window_offset = 0.9          # e_i 的确定性部分 = offset × τ(depot→i)（0.9 表示「最快可到」略放宽）
+time_window_spread_h = [0.0, 3.0] # e_i 再叠加 U(0,3) 小时的随机散布，使窗口铺开在一个工作日内
+                                  # 不加散布会让所有窗口挤在前 1.7 h，大算例必然不可行（初版踩过）
+time_window_width_min = [30, 90]  # 时间窗宽度 U(30,90) 分钟
+day_length_h = 8.0                # 工作日总长，用于校验 l_i 不超过班次
+nfz_count = [1, 2]                # 每算例 1–2 个禁飞区
+nfz_radius_ratio = [0.6, 1.0]     # 半径 = 覆盖簇包围盒半径 × U(0.6,1.0)
+# 禁飞时段以「班次起点 t=0」为基准，必须与时间窗（0–4.9 h）重叠，否则绕行永不触发
+# 初版误用 09:00 绝对时刻（32400 s），与 0–17600 s 的时间窗完全不交，时间维度失效
+nfz_start_h = [1.0, 2.0]          # 班次开始后 1–2 h 起禁飞
+nfz_duration_h = [1.2, 2.2]       # 持续 1.2–2.2 h。窗口期 0–4.9 h，覆盖约 40%，
+                                  # 使「绕 / 不绕」两类情形都出现（时长过大会让 98% 的航段都要绕，失去对照）
+
+[fleet_size]
+# 卡车数量 K 论文未给。策略 capacity：K = max(min_trucks, ceil(总派件量 / 卡车容量))
+# 实测后果：10 节点 → K=1~2；100 节点（总需求近 1 t）→ K=8~9。这是 300 lb 容量下的硬下界。
+# 若 K 恰好取下界，车辆满载率接近 100%，ALNS 的腾挪空间很小；要做灵敏度可调 capacity_slack。
+policy = "capacity"
+capacity_slack = 1.0              # K = ceil(总需求 × slack / 容量)，>1 表示允许留余量
+min_trucks = 1
+max_trucks = 12
+
+[alns]
+initial_temperature = 300.0       # [论文给定]
+cooling_rate = 0.99               # [论文给定]
+destruction_rate = 0.30           # [论文给定] 30%
+max_iterations = 2000             # [论文给定]
+max_no_improve = 200              # [论文给定]
+weight_global_best = 2.0          # [论文给定]
+weight_current_improve = 1.0
+weight_accepted = 0.5
+weight_rejected = 0.9
+seeds = 10                        # 每算例 10 个独立种子取 best
+
+[gurobi]
+time_limit_s = 3600               # 小规模验证用，按需调
+mip_gap = 0.0

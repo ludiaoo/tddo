@@ -32,6 +32,23 @@ git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
 
 原始算例为纯配送（VRPD）数据，本复现按论文 §5 注入取件需求、时间窗与禁飞区；**论文未给出这些改造的生成规则**，本项目自行定义并固化在 `configs/` 中（详见 `M0_论文要点笔记.md` §9）。
 
+## 生成算例
+
+```bash
+python -m src.generator      # 输出 data/instances/set01.json … set16.json 与终端汇总表
+```
+
+自定规则（全部在 `configs/config.toml` 的 `[generation]`，固定种子 `20261027 + set_id`）：
+
+| 项 | 规则 |
+|---|---|
+| 取件 | `g_i ~ U(0, f_i)`，向上取整到 0.5 lb |
+| 时间窗 | `e_i = 0.9·τ(depot→i) + U(0,3)h`，宽 `U(30,90)` min |
+| 禁飞区 | 每算例 1–2 个圆，圆心 = 随机客户 3–6 近邻质心，半径 = 簇半径 × U(0.6,1.0)，时段以班次起点为基准 |
+| 车队规模 | `K = ceil(Σf / Q_truck)`，100 节点算例约 8–9 辆（300 lb 容量下的硬下界） |
+
+> Table 3 的数字**不可能逐格复现**，因为改造规则本身未公开；本项目只要求趋势与量级一致。
+
 ## 目录
 
 ```

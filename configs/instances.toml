@@ -1,0 +1,121 @@
+# 16 个算例与 mFSTSP 原始问题的映射（对应论文 Table 3 的 Set 1–16）
+#
+# 选取规则（论文未说明，本项目自定）：
+#   1. 每个节点规模（10/25/50/100）× 每座城市（seattle/buffalo）各取 2 个
+#   2. 一个 depot 居中（numCust5milesDepot 最大），一个 depot 偏边缘（最小）
+#   3. 若最大与最小落在同一个算例上（小规模小城市常见），按 ProblemName 顺序取下一个未占用的
+#   结果：16 个互不相同，覆盖「大城/小城」×「depot 居中/边缘」两类形态差异
+#
+# 数据：data/raw/mFSTSP/Problems/<ProblemName>/
+
+[[sets]]
+id = 1
+n_customers = 10
+city = "seattle"
+depot = "center"
+problems = ["20170608T121651164057"]
+
+[[sets]]
+id = 2
+n_customers = 10
+city = "seattle"
+depot = "edge"
+problems = ["20170608T121903600571"]
+
+[[sets]]
+id = 3
+n_customers = 10
+city = "buffalo"
+depot = "center"
+problems = ["20170608T122024823843"]
+
+[[sets]]
+id = 4
+n_customers = 10
+city = "buffalo"
+depot = "edge"
+problems = ["20170608T122029847985"]
+
+[[sets]]
+id = 5
+n_customers = 25
+city = "seattle"
+depot = "center"
+problems = ["20170606T181516057642"]
+
+[[sets]]
+id = 6
+n_customers = 25
+city = "seattle"
+depot = "edge"
+problems = ["20170606T181644949435"]
+
+[[sets]]
+id = 7
+n_customers = 25
+city = "buffalo"
+depot = "center"
+problems = ["20170606T123316638608"]
+
+[[sets]]
+id = 8
+n_customers = 25
+city = "buffalo"
+depot = "edge"
+problems = ["20170606T123411109972"]
+
+[[sets]]
+id = 9
+n_customers = 50
+city = "seattle"
+depot = "center"
+problems = ["20170606T114145593946"]
+
+[[sets]]
+id = 10
+n_customers = 50
+city = "seattle"
+depot = "edge"
+problems = ["20170606T114840930461"]
+
+[[sets]]
+id = 11
+n_customers = 50
+city = "buffalo"
+depot = "center"
+problems = ["20170606T123545699742"]
+
+[[sets]]
+id = 12
+n_customers = 50
+city = "buffalo"
+depot = "edge"
+problems = ["20170606T183214059726"]
+
+[[sets]]
+id = 13
+n_customers = 100
+city = "seattle"
+depot = "center"
+problems = ["20170606T120227545709"]
+
+[[sets]]
+id = 14
+n_customers = 100
+city = "seattle"
+depot = "edge"
+problems = ["20170606T122653532986"]
+
+[[sets]]
+id = 15
+n_customers = 100
+city = "buffalo"
+depot = "center"
+problems = ["20170606T124325384128"]
+
+[[sets]]
+id = 16
+n_customers = 100
+city = "buffalo"
+depot = "edge"
+problems = ["20170606T131220449002"]
