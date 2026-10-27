@@ -49,6 +49,17 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 
 > Table 3 的数字**不可能逐格复现**，因为改造规则本身未公开；本项目只要求趋势与量级一致。
 
+## 可视化与测试
+
+```bash
+python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
+pip install -r requirements-dev.txt
+python -m pytest -q           # 92 项：数据接入 + 算例规则 + 金标准回归
+```
+
+`data/instances/*.json` 是**金标准**：任何人改了 `src/generator.py` 或 `configs/config.toml`，
+`test_金标准算例未被改动` 会立刻失败并打印第一处差异。确认要改时重跑生成器并一起提交。
+
 ## 目录
 
 ```
