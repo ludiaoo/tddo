@@ -54,7 +54,8 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
 pip install -r requirements-dev.txt
-python -m pytest -q           # 92 项：数据接入 + 算例规则 + 金标准回归
+python -m pytest -q           # 121 项：数据接入 + 算例规则 + 几何/能耗 + 金标准回归
+python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
 ```
 
 `data/instances/*.json` 是**金标准**：任何人改了 `src/generator.py` 或 `configs/config.toml`，
@@ -75,7 +76,7 @@ results/      结果 CSV 与图
 
 - [x] M0 准备：环境、文献与数据源
 - [x] M1 数据准备与算例构造
-- [ ] M2 基础计算：距离、绕行与能耗
+- [x] M2 基础计算：距离、绕行与能耗
 - [ ] M3 解的表示与成本评估
 - [ ] M4 初始可行解构造
 - [ ] M5 改进算法：ALNS 主循环
