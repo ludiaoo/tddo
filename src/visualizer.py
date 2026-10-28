@@ -48,11 +48,13 @@ def plot_network(inst: Instance, ax=None, title: str | None = None):
         )
         ax.add_patch(c)
         ax.annotate(
-            f"{z.label}\n{z.t_start / 3600:.1f}–{z.t_end / 3600:.1f} h",
+            z.label,
             (z.cx / 1000.0, z.cy / 1000.0),
+            xytext=(0, 6),
+            textcoords="offset points",
             ha="center",
-            va="center",
-            fontsize=6.5,
+            va="bottom",
+            fontsize=5.5,
             color="#A32D2D",
             zorder=2,
         )

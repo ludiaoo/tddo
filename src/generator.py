@@ -84,76 +84,54 @@ def _make_time_windows(
 def _make_nfz(
     base: BaseProblem,
     rng: np.random.Generator,
-    count_range: tuple[int, int],
-    radius_ratio: tuple[float, float],
-    start_range: tuple[float, float] = (0.5, 1.5),
-    duration_range: tuple[float, float] = (2.0, 3.5),
+    n_target: int,
+    radius_range: tuple[float, float] = (250.0, 600.0),
+    start_range: tuple[float, float] = (1.0, 2.0),
+    duration_range: tuple[float, float] = (1.2, 2.2),
 ) -> tuple[NFZ, ...]:
     """生成圆形时空禁飞区。
 
-    - 圆心：随机种子客户的 k 近邻质心（禁飞区落在客户簇上才真正影响路由）
-    - 半径：簇包围半径 × U(radius_lo, radius_hi)，再夹到 [300 m, 0.25 × 区域对角线]
-    - 时段：[U(start_lo,start_hi), +U(dur_lo,dur_hi)] 小时，**以班次起点 t=0 为基准**，
-      必须与客户时间窗（0–4.9 h）重叠，否则绕行永不触发
+    - 数量：按客户规模给定（`n_target`），对齐论文 Fig.8 的「多而小」形态
+    - 圆心：**取某个客户点本身**，保证区内至少有一个客户 → γ≡1 的分支一定可达；
+      初版取「k 近邻质心」，簇一散开圆里就一个客户也没有，`γ≡0` 使 Fig.3 的
+      「禁飞期内不能起降」判定永远走不到（被单测抓出来的）
+    - 半径：**绝对** U(250, 600) m
+    - 时段：[U(start_lo,start_hi), +U(dur_lo,dur_hi)] 小时，以班次起点 t=0 为基准
     - 约束：圆心到 depot 的距离必须 > r + 500 m（禁飞区罩住仓库会让算例失去意义）
 
-    k 随客户数自适应（10 客户取 3 近邻，50+ 取 6），否则小算例会「6 个近邻就覆盖全城」，
-    半径被撑到几公里，导致永远与 depot 冲突、一个区也放不下（初版踩过这个坑）。
+    半径用绝对米数而非「簇半径 × 比例」，是因为 Fig.8 里无论 10 还是 100 个客户，
+    圆的绝对尺寸都在几百米量级；按比例算会让 100 客户算例出现 3–4 km 的大圆，
+    把整片客户在禁飞期内直接禁掉，绕行机制就退化成了任务转移。
     """
-    n_cust = base.n_customers
     xy = np.array([[nd.x, nd.y] for nd in base.nodes])
     depot = xy[0]
-
-    # 区域尺度：所有客户到 depot 的最大距离
-    span = float(np.linalg.norm(xy[1:] - depot, axis=1).max())
-    r_cap = max(0.25 * span, 300.0)
-
-    cluster_size = min(6, max(3, n_cust // 5))
-    n_target = int(rng.integers(count_range[0], count_range[1] + 1))
-    n_target = max(1, min(n_target, n_cust))
 
     zones: list[NFZ] = []
     used_seeds: set[int] = set()
 
     for slot in range(n_target):
-        placed = False
-        shrink = 1.0
-        for _ in range(4):                      # 逐级缩小半径重试
-            for _ in range(80):
-                seed = int(rng.integers(1, base.n_nodes))
-                if seed in used_seeds:
-                    continue
-                d = np.linalg.norm(xy[1:] - xy[seed], axis=1)
-                k = min(cluster_size, n_cust)
-                idx = np.argsort(d)[:k] + 1
-                cluster = xy[idx]
-                center = cluster.mean(axis=0)
-                cluster_r = float(np.linalg.norm(cluster - center, axis=1).max())
+        for _ in range(300):
+            seed = int(rng.integers(1, base.n_nodes))
+            if seed in used_seeds:
+                continue
+            center = xy[seed]
+            r = float(rng.uniform(*radius_range))
+            if np.linalg.norm(center - depot) <= r + 500.0:
+                continue
 
-                r = cluster_r * rng.uniform(*radius_ratio) * shrink
-                r = min(max(r, 300.0), r_cap)
-                if np.linalg.norm(center - depot) <= r + 500.0:
-                    continue
-
-                t_start = rng.uniform(*start_range) * 3600.0
-                t_end = t_start + rng.uniform(*duration_range) * 3600.0
-                zones.append(
-                    NFZ(
-                        cx=float(center[0]),
-                        cy=float(center[1]),
-                        r=float(r),
-                        t_start=t_start,
-                        t_end=t_end,
-                        label=f"nfz{slot + 1}",
-                    )
+            t_start = rng.uniform(*start_range) * 3600.0
+            t_end = t_start + rng.uniform(*duration_range) * 3600.0
+            zones.append(
+                NFZ(
+                    cx=float(center[0]),
+                    cy=float(center[1]),
+                    r=r,
+                    t_start=t_start,
+                    t_end=t_end,
+                    label=f"nfz{slot + 1}",
                 )
-                used_seeds.add(seed)
-                placed = True
-                break
-            if placed:
-                break
-            shrink *= 0.7
-        if not placed:
+            )
+            used_seeds.add(seed)
             break
 
     return tuple(zones)
@@ -194,12 +172,13 @@ def build_instance(set_cfg: dict, cfg: dict) -> Instance:
     if over:
         raise ValueError(f"Set{set_cfg['id']}: 节点 {over[:5]} 的时间窗越过班次长度 {day_end/3600:.0f} h")
 
-    nfz_lo, nfz_hi = gen["nfz_count"]
+    n_target = int(round(base.n_customers / float(gen["nfz_per_customers"])))
+    n_target = min(max(n_target, int(gen["nfz_count_min"])), int(gen["nfz_count_max"]))
     nfz = _make_nfz(
         base,
         rng,
-        (nfz_lo, nfz_hi),
-        tuple(gen["nfz_radius_ratio"]),
+        n_target,
+        radius_range=tuple(gen["nfz_radius_m"]),
         start_range=tuple(gen["nfz_start_h"]),
         duration_range=tuple(gen["nfz_duration_h"]),
     )

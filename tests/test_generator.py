@@ -110,11 +110,20 @@ def test_时间窗规则(set_cfg):
 @pytest.mark.parametrize("set_cfg", SETS, ids=lambda s: f"set{s['id']:02d}")
 def test_禁飞区规则(set_cfg):
     inst = build_instance(set_cfg, CFG)
-    assert len(inst.nfz) >= 1, "每个算例至少要有一个禁飞区，否则 NFZ 机制失效"
+    gen = CFG["generation"]
 
+    # 数量对齐论文 Fig.8 的「多而小」：clamp(round(n/8), min, max)
+    expect_n = round(inst.n_customers / gen["nfz_per_customers"])
+    expect_n = min(max(expect_n, gen["nfz_count_min"]), gen["nfz_count_max"])
+    assert len(inst.nfz) == expect_n, (
+        f"禁飞区数量 {len(inst.nfz)} != 期望 {expect_n}（论文 Fig.8 里 50 客户约 6 个、100 客户约 6 个）"
+    )
+
+    # 半径必须是几百米量级，不能出现覆盖整簇的大圆
+    r_lo, r_hi = gen["nfz_radius_m"]
     depot_x, depot_y = inst.base.nodes[0].x, inst.base.nodes[0].y
     for z in inst.nfz:
-        assert z.r > 0.0
+        assert 150.0 <= z.r <= r_hi + 1e-6, f"禁飞区半径 {z.r:.0f} m 超出量级"
         assert z.t_end > z.t_start
         d = float(np.hypot(z.cx - depot_x, z.cy - depot_y))
         assert d > z.r + 400.0, "禁飞区不应罩住仓库"
@@ -125,6 +134,11 @@ def test_禁飞区规则(set_cfg):
     assert any(not (z.t_end < e_min or z.t_start > l_max) for z in inst.nfz), (
         "禁飞时段与客户时间窗完全不重叠 → 绕行逻辑不会触发"
     )
+
+    # 至少要有客户落在禁飞区内，else γ≡0，Fig.3 的「不能起降」分支永远走不到
+    xy = np.array([[nd.x, nd.y] for nd in inst.base.nodes[1:]])
+    inside = sum(int((np.hypot(xy[:, 0] - z.cx, xy[:, 1] - z.cy) <= z.r).sum()) for z in inst.nfz)
+    assert inside > 0, "没有任何客户位于禁飞区内，时间维度的禁飞判定无法被触发"
 
 
 @pytest.mark.parametrize("set_cfg", SETS, ids=lambda s: f"set{s['id']:02d}")
