@@ -14,7 +14,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.patches import Circle
+from matplotlib.patches import Circle, Patch
 
 from .generator import build_instance
 from .instance import Instance
@@ -27,8 +27,11 @@ plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 
 
-def plot_network(inst: Instance, ax=None, title: str | None = None):
-    """画单个算例：节点 + 仓库 + 禁飞区。"""
+def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool = True):
+    """画单个算例：节点 + 仓库 + 禁飞区。
+
+    蓝点 = 客户（大小 ∝ √派件量），黑方块 = 仓库，粉色虚线圈 = 时空禁飞区。
+    """
     if ax is None:
         _, ax = plt.subplots(figsize=(6, 6))
 
@@ -63,11 +66,19 @@ def plot_network(inst: Instance, ax=None, title: str | None = None):
     demand = inst.f[1:]
     sizes = 12 + 60 * np.sqrt(demand / max(demand.max(), 1e-9))
     ax.scatter(xy[1:, 0], xy[1:, 1], s=sizes, c="#378ADD", edgecolors="#0C447C",
-               linewidths=0.5, alpha=0.85, zorder=3, label="客户")
+               linewidths=0.5, alpha=0.85, zorder=3, label="客户（大小 ∝ √派件量）")
 
     # 仓库
     ax.scatter(*xy[0], s=140, marker="s", c="#2C2C2A", edgecolors="white",
                linewidths=0.8, zorder=4, label="仓库")
+
+    if legend:
+        nfz_proxy = Patch(facecolor="#E24B4A", alpha=0.25, edgecolor="#A32D2D",
+                          linewidth=1.0, linestyle="--", label="禁飞区（时空）")
+        handles, labels = ax.get_legend_handles_labels()
+        ax.legend(handles + [nfz_proxy], labels + ["禁飞区（时空）"],
+                  loc="upper left", fontsize=6, framealpha=0.85,
+                  handletextpad=0.4, borderpad=0.3, labelspacing=0.3)
 
     # 等比例
     lo = xy.min(axis=0) - 1.0

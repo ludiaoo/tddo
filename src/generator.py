@@ -92,9 +92,10 @@ def _make_nfz(
     """生成圆形时空禁飞区。
 
     - 数量：按客户规模给定（`n_target`），对齐论文 Fig.8 的「多而小」形态
-    - 圆心：**取某个客户点本身**，保证区内至少有一个客户 → γ≡1 的分支一定可达；
+    - 圆心：**落在某个客户点附近（偏移 0.25–0.55 r）**，保证区内至少有一个客户 → γ≡1 可达；
       初版取「k 近邻质心」，簇一散开圆里就一个客户也没有，`γ≡0` 使 Fig.3 的
-      「禁飞期内不能起降」判定永远走不到（被单测抓出来的）
+      「禁飞期内不能起降」判定永远走不到（被单测抓出来的）；圆心也不压在节点上，
+      否则 M2 的切线长 sqrt(d^2-r^2) 在 d=0 处无定义
     - 半径：**绝对** U(250, 600) m
     - 时段：[U(start_lo,start_hi), +U(dur_lo,dur_hi)] 小时，以班次起点 t=0 为基准
     - 约束：圆心到 depot 的距离必须 > r + 500 m（禁飞区罩住仓库会让算例失去意义）
@@ -114,8 +115,12 @@ def _make_nfz(
             seed = int(rng.integers(1, base.n_nodes))
             if seed in used_seeds:
                 continue
-            center = xy[seed]
             r = float(rng.uniform(*radius_range))
+            # 圆心从客户点偏移 0.25–0.55 r：保证该客户仍在区内，但圆心不等于节点。
+            # 若圆心正好压在节点上，切线长 sqrt(d^2 - r^2) 在 d=0 处无定义（M2 的绕行几何会出 nan）
+            theta = rng.uniform(0.0, 2.0 * np.pi)
+            off = rng.uniform(0.25, 0.55) * r
+            center = xy[seed] + np.array([np.cos(theta), np.sin(theta)]) * off
             if np.linalg.norm(center - depot) <= r + 500.0:
                 continue
 
