@@ -23,3 +23,6 @@ data/raw/mFSTSP/
 # ---- 系统 ----
 .DS_Store
 Thumbs.db
+
+# 含 Elsevier 原图的对照图，仅本地查看，不入库
+results/figs/compare_with_paper.png
