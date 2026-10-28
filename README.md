@@ -49,6 +49,18 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 
 > Table 3 的数字**不可能逐格复现**，因为改造规则本身未公开；本项目只要求趋势与量级一致。
 
+## 文档
+
+- `M0_论文要点笔记.md`：复现对象的问题、符号、约束地图、算法与参数
+- `约束逐条翻译_2-79.md`：79 条约束逐条公式 + 直译 + 为什么需要 + 启发式如何处理
+- `约束逐条翻译_2-79.html`：同上，公式已渲染（MathML，离线可看）
+
+公式用 LaTeX 写在 md 里，HTML 由 pandoc 生成：
+
+```bash
+python -m scripts.build_docs        # 需要 pandoc 3.x
+```
+
 ## 可视化与测试
 
 ```bash
