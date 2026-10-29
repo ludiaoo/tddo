@@ -142,12 +142,21 @@ def test_禁飞区规则(set_cfg):
 
 
 @pytest.mark.parametrize("set_cfg", SETS, ids=lambda s: f"set{s['id']:02d}")
-def test_车队规模按容量下界(set_cfg):
+def test_车队规模不小于容量下界(set_cfg):
+    """K = max(容量下界, 时间窗所需路线数)。
+
+    只按容量算会低估：时间窗把客户切成多段，一辆车跑不完。实测 Set1 容量只需 1 辆，
+    时间窗却要 3 辆。改后 50 节点 K=6–9、100 节点 K=10–14，与论文 Fig.8 的 9 / 12 吻合。
+    """
+    from src.initial import routes_needed_by_windows
+
     inst = build_instance(set_cfg, CFG)
     fs = CFG["fleet_size"]
-    expect = int(np.ceil(inst.f.sum() * fs["capacity_slack"] / inst.params.truck_capacity))
-    expect = min(max(expect, fs["min_trucks"]), fs["max_trucks"])
-    assert inst.n_trucks == expect
+    cap_k = int(np.ceil(inst.f.sum() * fs["capacity_slack"] / inst.params.truck_capacity))
+    cap_k = min(max(cap_k, fs["min_trucks"]), fs["max_trucks"])
+
+    assert inst.n_trucks >= cap_k
+    assert inst.n_trucks == max(cap_k, routes_needed_by_windows(inst))
     assert inst.f.sum() <= inst.n_trucks * inst.params.truck_capacity + 1e-6
 
 

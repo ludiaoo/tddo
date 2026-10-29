@@ -196,7 +196,7 @@ def build_instance(set_cfg: dict, cfg: dict) -> Instance:
         int(fs["max_trucks"]),
     )
 
-    return Instance(
+    inst = Instance(
         set_id=int(set_cfg["id"]),
         base=base,
         f=f,
@@ -207,6 +207,14 @@ def build_instance(set_cfg: dict, cfg: dict) -> Instance:
         params=params,
         seed=seed,
     )
+
+    # 车队规模不能只看容量：时间窗可能逼出更多路线。
+    # K = max(容量下界, 松弛优先所需路线数)，否则初始解会出现「用了 3 条路线但 K=1」的矛盾。
+    from .initial import routes_needed_by_windows
+
+    k_window = routes_needed_by_windows(inst)
+    inst.n_trucks = int(max(n_trucks, k_window))
+    return inst
 
 
 def instance_to_dict(inst: Instance) -> dict:

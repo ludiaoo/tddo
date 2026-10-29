@@ -66,7 +66,7 @@ python -m scripts.build_docs        # 需要 pandoc 3.x
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
 pip install -r requirements-dev.txt
-python -m pytest -q           # 133 项：数据接入 + 算例规则 + 几何/能耗 + 评估器 + 金标准回归
+python -m pytest -q           # 152 项：数据接入 + 算例规则 + 几何/能耗 + 评估器 + 初始解 + 金标准回归
 python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
 ```
 
@@ -90,7 +90,7 @@ results/      结果 CSV 与图
 - [x] M1 数据准备与算例构造
 - [x] M2 基础计算：距离、绕行与能耗
 - [x] M3 解的表示与成本评估
-- [ ] M4 初始可行解构造
+- [x] M4 初始可行解构造
 - [ ] M5 改进算法：ALNS 主循环
 - [ ] M6 实验与结果对标
 - [ ] M7 灵敏度分析与可视化

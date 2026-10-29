@@ -238,11 +238,18 @@ def _straight(inst: Instance, i: int, j: int) -> float:
     return ((a.x - b.x) ** 2 + (a.y - b.y) ** 2) ** 0.5
 
 
-def evaluate(inst: Instance, sol: Solution) -> tuple[EvalResult, float]:
-    """返回（逐路线结果, 总成本）。总成本 = Σ 无人机电费 + 卡车油费 + 司机工时。"""
+def evaluate(
+    inst: Instance, sol: Solution, check_structure: bool = True
+) -> tuple[EvalResult, float]:
+    """返回（逐路线结果, 总成本）。总成本 = Σ 无人机电费 + 卡车油费 + 司机工时。
+
+    `check_structure=False` 用于**单条路线的试算**：完整性检查（每个客户都被服务）
+    只有在整解层面才有意义，否则构造过程中任何一次局部试算都会被判成"客户缺失"。
+    """
     from .solution import validate_structure
 
     evs = [_simulate_route(inst, r) for r in sol.routes]
-    res = EvalResult(routes=evs, structure_errors=validate_structure(sol, inst))
+    errs = validate_structure(sol, inst) if check_structure else []
+    res = EvalResult(routes=evs, structure_errors=errs)
     total = sum(r.cost(inst) for r in evs)
     return res, total
