@@ -208,7 +208,8 @@
 <li><a href="#约束逐条翻译279"
 id="toc-约束逐条翻译279">约束逐条翻译（2)–(79)</a>
 <ul>
-<li><a href="#符号缩写" id="toc-符号缩写">符号缩写</a></li>
+<li><a href="#符号缩写仅作阅读辅助"
+id="toc-符号缩写仅作阅读辅助">符号缩写（仅作阅读辅助）</a></li>
 <li><a href="#路径规划-215" id="toc-路径规划-215">3.1.1 路径规划
 (2)–(15)</a></li>
 <li><a href="#客户访问-1621" id="toc-客户访问-1621">3.1.2 客户访问
@@ -241,7 +242,13 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 判断标记：<code>结构</code> = 解的数据结构自动满足；<code>显式</code> =
 评估器必须写检查；<code>MILP</code> = 只有解数学规划才需要。</p>
 </blockquote>
-<h2 id="符号缩写">符号缩写</h2>
+<h2 id="符号缩写仅作阅读辅助">符号缩写（仅作阅读辅助）</h2>
+<blockquote>
+<p><strong>公式里一律用原文的完整记号</strong>（<code>x^k_{ij}</code>、<code>T_i^{truck,k}</code>、<code>f_i^{t,k}</code>、<code>s_{ih}^k</code>），
+下表只是为了在正文里少写几个字。看到 <code>T^T_i</code> 就对应
+<code>T_i^{truck,k}</code>，<code>T^D_i</code> 对应
+<code>T_i^{drone,k}</code>。</p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -316,8 +323,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <hr />
 <h2 id="路径规划-215">3.1.1 路径规划 (2)–(15)</h2>
 <h3 id="卡车出发">(2) 卡车出发</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{j\in U} x^{k}_{0j} = 1, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{j\in U} x_{0j}^{k} = 1, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：每辆卡车从出发仓 0 出发，恰好一次。</li>
@@ -325,8 +332,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="卡车返回">(3) 卡车返回</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{i\in U} x^{k}_{i,U+1} = 1, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in U} x_{i,U+1}^{k} = 1, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：每辆卡车回到返回仓 U+1，恰好一次。</li>
@@ -334,8 +341,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="载机出发">(4) 载机出发</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>α</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{j\in U} \alpha^{k}_{0j} = 1, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>α</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{j\in U} \alpha_{0j}^{k} = 1, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：每辆卡车出发时<strong>带着</strong>它的无人机。</li>
@@ -343,8 +350,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构（每车固定配 1 机）。</li>
 </ul>
 <h3 id="载机返回">(5) 载机返回</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{i\in U} \alpha^{k}_{i,U+1} = 1, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in U} \alpha_{i,U+1}^{k} = 1, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：回仓时无人机仍在车上。</li>
@@ -353,8 +360,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="无人机不得从仓库独飞">(6) 无人机不得从仓库独飞</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>y</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{j\in U} y^{k}_{0j} = 0, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>y</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{j\in U} y_{0j}^{k} = 0, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机不能从出发仓单独起飞。</li>
@@ -362,8 +369,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="无人机不得独飞回仓库">(7) 无人机不得独飞回仓库</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{i\in U} y^{k}_{i,U+1} = 0, \forall k \in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in U} y_{i,U+1}^{k} = 0, \quad \forall k \in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机不能单独飞回返回仓。</li>
@@ -371,8 +378,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="卡车流守恒">(8) 卡车流守恒</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>m</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>j</mi><mi>m</mi><mo>,</mo></mrow><mi>k</mi></msubsup><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
-\sum_{i\in N^{d}, i\ne j} x^{k}_{ij} = \sum_{m\in N^{a}, m\ne j} x^{k}_{jm,} \forall j\in U, k\in K
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.167em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.167em"></mspace><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},\, i\ne j} x_{ij}^{k} = \sum_{m\in N^{a},\, j\ne m} x_{jm}^{k}, \quad \forall j\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车进入 j 的弧数 = 离开 j 的弧数。</li>
@@ -380,8 +387,8 @@ id="toc-一句话总结只有-5-类要写代码">一句话总结：只有 5
 <li><strong>启发式</strong>：结构（路径是节点序列）。</li>
 </ul>
 <h3 id="无人机流守恒自飞-被载">(9) 无人机流守恒（自飞 + 被载）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-\sum_{i\ne j} y^{k}_{ij} + \sum_{i\ne j} \alpha^{k}_{ij} = \sum_{m\ne j} y^{k}_{jm} + \sum_{m\ne j} \alpha^{k}_{jm}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},i\ne j} y_{ij}^{k} + \sum_{i\in N^{d},i\ne j} \alpha_{ij}^{k} = \sum_{m\in N^{a},j\ne m} y_{jm}^{k} + \sum_{m\in N^{a},j\ne m} \alpha_{jm}^{k}
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机“进 j”的方式（自飞或被载）= “出
@@ -391,8 +398,8 @@ j”的方式。</li>
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="载机-卡车也走这条边">(10) 载机 ⇒ 卡车也走这条边</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi><mo>,</mo></mrow><mi>k</mi></msubsup><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>i</mi></mrow><annotation encoding="application/x-tex">
-\alpha^{k}_{ij} \le x^{k}_{ij,} \forall i\in N^{d}, j\in N^{a}, j\ne i
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><msup><mi>N</mi><mi>a</mi></msup><mo>:</mo><mi>j</mi><mo>≠</mo><mi>i</mi><mo stretchy="false" form="postfix">}</mo><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\alpha_{ij}^{k} \le x_{ij}^{k}, \quad \forall i\in N^{d},\ j\in\{N^{a}: j\ne i\},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车载着无人机走 i→j ⇒ 卡车本身必须走
@@ -402,8 +409,8 @@ i→j。</li>
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="不能既被载又自飞">(11) 不能既被载又自飞</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">
-\alpha^{k}_{ij} + y^{k}_{ij} \le 1
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><msup><mi>N</mi><mi>a</mi></msup><mo>:</mo><mi>j</mi><mo>≠</mo><mi>i</mi><mo stretchy="false" form="postfix">}</mo><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\alpha_{ij}^{k} + y_{ij}^{k} \le 1, \quad \forall i\in N^{d},\ j\in\{N^{a}: j\ne i\},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：同一条边，无人机不能被载着走又同时自己飞。</li>
@@ -411,8 +418,8 @@ i→j。</li>
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="卡车去子环">(12) 卡车去子环</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>u</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>u</mi><mi>i</mi><mi>k</mi></msubsup><mo>≥</mo><mn>1</mn><mo>−</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>i</mi></mrow><annotation encoding="application/x-tex">
-u^{k}_{j} - u^{k}_{i} \ge 1 - (U+2)(1 - x^{k}_{ij}), \forall i\in U, j\in N^{a}, j\ne i
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>u</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>u</mi><mi>i</mi><mi>k</mi></msubsup><mo>≥</mo><mn>1</mn><mo>−</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mo stretchy="false" form="prefix">{</mo><msup><mi>N</mi><mi>a</mi></msup><mo>:</mo><mi>j</mi><mo>≠</mo><mi>i</mi><mo stretchy="false" form="postfix">}</mo><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+u_{j}^{k} - u_{i}^{k} \ge 1 - (U+2)\left(1 - x_{ij}^{k}\right), \quad \forall i\in U,\ j\in\{N^{a}: j\ne i\},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若卡车走 i→j，则 j 的位置序号至少比 i 大
@@ -422,8 +429,8 @@ u^{k}_{j} - u^{k}_{i} \ge 1 - (U+2)(1 - x^{k}_{ij}), \forall i\in U, j\in N^{a},
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="禁飞期内不得从区内节点起飞">(13) 禁飞期内不得从区内节点起飞</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>i</mi><mi>h</mi><mo>,</mo></mrow><mi>k</mi></msubsup><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>j</mi><mo>≠</mo><mi>i</mi><mo>,</mo><mi>k</mi><mo>,</mo><mi>h</mi></mrow><annotation encoding="application/x-tex">
-y^{k}_{ij} \le 1 - s^{k}_{ih,} \forall i\in U, j\in U, j\ne i, k, h
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>≠</mo><mi>i</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+y_{ij}^{k} \le 1 - s_{ih}^{k}, \quad \forall i\in U,\ j\in U,\ j\ne i,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若节点 i 在禁飞期内位于禁飞区 h
@@ -433,8 +440,8 @@ y^{k}_{ij} \le 1 - s^{k}_{ih,} \forall i\in U, j\in U, j\ne i, k, h
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="禁飞期内不得降落到区内节点">(14) 禁飞期内不得降落到区内节点</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-y^{k}_{ij} \le 1 - s^{k}_{jh}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>≠</mo><mi>i</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+y_{ij}^{k} \le 1 - s_{jh}^{k}, \quad \forall i\in U,\ j\in U,\ j\ne i,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若节点 j 在禁飞期内位于区内，则无人机不能飞到
@@ -444,8 +451,8 @@ j。</li>
 </ul>
 <h3 id="禁飞期内不得在区内起降连动作都不许">(15)
 禁飞期内不得在区内起降（连动作都不许）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-w^{k}_{i} \le 1 - s^{k}_{ih}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>s</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+w_{i}^{k} \le 1 - s_{ih}^{k}, \quad \forall i\in U,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若 i
@@ -458,8 +465,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 <hr />
 <h2 id="客户访问-1621">3.1.2 客户访问 (16)–(21)</h2>
 <h3 id="一个客户不被两辆卡车访问">(16) 一个客户不被两辆卡车访问</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
-\sum_{k} \sum_{i\in N^{d}, i\ne j} x^{k}_{ij} \le 1, \forall j\in U
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
+\sum_{k\in K}\sum_{i\in N^{d},i\ne j} x_{ij}^{k} \le 1, \quad \forall j\in U
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：进入客户 j 的卡车弧，总数不超过 1。</li>
@@ -467,8 +474,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="一个客户不被两架无人机到访">(17) 一个客户不被两架无人机到访</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><mo stretchy="false" form="prefix">(</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>≤</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
-\sum_{k} \sum_{i\ne j} (y^{k}_{ij} + \alpha^{k}_{ij}) \le 1, \forall j\in U
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">(</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>α</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>≤</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
+\sum_{k\in K}\left(\sum_{i\in N^{d},i\ne j} y_{ij}^{k} + \sum_{i\in N^{d},i\ne j} \alpha_{ij}^{k}\right) \le 1, \quad \forall j\in U
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：进入 j 的无人机弧（自飞或被载）总数 ≤
@@ -478,8 +485,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 </ul>
 <h3 id="客户至少被访问一次除非是起降点">(18)
 客户至少被访问一次（除非是起降点）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≥</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mrow><mi>j</mi><mo>,</mo></mrow><mi>k</mi></msubsup><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup></mrow><annotation encoding="application/x-tex">
-\sum_{i\ne j} x^{k}_{ij} + \sum_{i\ne j} y^{k}_{ij} \ge 1 - w^{k}_{j,} \forall j\in N^{a}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≥</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},i\ne j} x_{ij}^{k} + \sum_{i\in N^{d},i\ne j} y_{ij}^{k} \ge 1 - w_{j}^{k}, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若 j
@@ -490,8 +497,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 </ul>
 <h3 id="客户至多被访问一次起降点除外">(19)
 客户至多被访问一次（起降点除外）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-\sum_{i\ne j} x^{k}_{ij} + \sum_{i\ne j} y^{k}_{ij} \le 1 + w^{k}_{j}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},i\ne j} x_{ij}^{k} + \sum_{i\in N^{d},i\ne j} y_{ij}^{k} \le 1 + w_{j}^{k}, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若 w=1（j
@@ -501,8 +508,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 </ul>
 <h3 id="w-的必要条件卡车和无人机都到了">(20) w
 的必要条件：卡车和无人机都到了</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mtext mathvariant="normal">in</mtext></munder><mi>x</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">in</mtext></munder><mi>y</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">out</mtext></munder><mi>x</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">out</mtext></munder><mi>y</mi><mo>≥</mo><mn>2</mn><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-\sum_{\text{in}} x + \sum_{\text{in}} y + \sum_{\text{out}} x + \sum_{\text{out}} y \ge 2 + w^{k}_{j}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>≥</mo><mn>2</mn><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},i\ne j} x_{ij}^{k} + \sum_{i\in N^{d},i\ne j} y_{ij}^{k} + \sum_{m\in N^{a},j\ne m} x_{jm}^{k} + \sum_{m\in N^{a},j\ne m} y_{jm}^{k} \ge 2 + w_{j}^{k}, \quad \forall j\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若在 j 起降（w=1），则围绕 j
@@ -512,8 +519,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 <li><strong>启发式</strong>：结构（w 由我们摆放）。</li>
 </ul>
 <h3 id="w-的充分性上限">(21) w 的充分性上限</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mtext mathvariant="normal">in</mtext></munder><mi>x</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">in</mtext></munder><mi>y</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">out</mtext></munder><mi>x</mi><mo>+</mo><munder><mo>∑</mo><mtext mathvariant="normal">out</mtext></munder><mi>y</mi><mo>≤</mo><mn>2</mn><mo>+</mo><mn>2</mn><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-\sum_{\text{in}} x + \sum_{\text{in}} y + \sum_{\text{out}} x + \sum_{\text{out}} y \le 2 + 2w^{k}_{j}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>m</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>j</mi><mo>≠</mo><mi>m</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>j</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>2</mn><mo>+</mo><mn>2</mn><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+\sum_{i\in N^{d},i\ne j} x_{ij}^{k} + \sum_{i\in N^{d},i\ne j} y_{ij}^{k} + \sum_{m\in N^{a},j\ne m} x_{jm}^{k} + \sum_{m\in N^{a},j\ne m} y_{jm}^{k} \le 2 + 2w_{j}^{k}, \quad \forall j\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：围绕 j 的弧数最多 2（正常访问）或
@@ -524,8 +531,8 @@ w^{k}_{i} \le 1 - s^{k}_{ih}
 <hr />
 <h2 id="时间同步-2238">3.1.3 时间同步 (22)–(38)</h2>
 <h3 id="卡车时刻递推">(22) 卡车时刻递推</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>T</mi></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>i</mi><mi>T</mi></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{T}_{j} \ge T^{T}_{i} + \tau^{truck}_{ij} - M(1 - x^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>i</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{truck,k} \ge T_{i}^{truck,k} + \tau_{ij}^{truck,k} - M\left(1 - x_{ij}^{k}\right), \quad \forall i\in N^{d},\ j\in N^{a},\ i\ne j,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车走 i→j 时，到达 j 不早于「到达 i +
@@ -535,8 +542,8 @@ T^{T}_{j} \ge T^{T}_{i} + \tau^{truck}_{ij} - M(1 - x^{k}_{ij})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="无人机时刻递推下界">(23) 无人机时刻递推（下界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>i</mi><mi>T</mi></msubsup><mo>⋅</mo><msub><mi>w</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mi>h</mi></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo stretchy="false" form="postfix">)</mo><mi>/</mi><mi>v</mi><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \ge T^{T}_{i}\cdot w_{i} + T^{D}_{i}\cdot(1-w_{i}) + \tau^{drone}_{ij} + \sum_{h} d_{ijh}(z^{end}_{ih} - z^{start}_{jh})/v - M(1-y^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>i</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mfrac><mrow><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msup><mi>v</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup></mfrac><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \ge T_{i}^{truck,k}w_{i}^{k} + T_{i}^{drone,k}\left(1 - w_{i}^{k}\right) + \tau_{ij}^{drone,k} + \frac{\sum_{h\in H} d_{ijh}\left(z_{ih}^{end,k} - z_{jh}^{start,k}\right)}{v^{drone}} - M\left(1 - y_{ij}^{k}\right)
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机从 i 飞到 j 时，到达 j 不早于「出发时刻
@@ -547,8 +554,8 @@ T^{D}_{j} \ge T^{T}_{i}\cdot w_{i} + T^{D}_{i}\cdot(1-w_{i}) + \tau^{drone}_{ij}
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="无人机时刻递推上界">(24) 无人机时刻递推（上界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≤</mo><mo stretchy="false" form="prefix">(</mo><mi>同</mi><mi>上</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \le (同上) + M(1-y^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>T</mi><mi>i</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mfrac><mrow><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><msup><mi>v</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup></mfrac><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \le T_{i}^{truck,k}w_{i}^{k} + T_{i}^{drone,k}\left(1 - w_{i}^{k}\right) + \tau_{ij}^{drone,k} + \frac{\sum_{h\in H} d_{ijh}\left(z_{ih}^{end,k} - z_{jh}^{start,k}\right)}{v^{drone}} + M\left(1 - y_{ij}^{k}\right)
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：同一表达式也给上界，合起来就是等式。</li>
@@ -557,12 +564,12 @@ T^{D}_{j} \le (同上) + M(1-y^{k}_{ij})
 <li><strong>启发式</strong>：与 (23) 合并为一条递推。</li>
 </ul>
 <h3 id="z_start-的下界">(25) z_start 的下界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mo>⋅</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \ge t^{start}_{h} - M\cdot z^{start}_{ih}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mspace width="0.167em"></mspace><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \ge t_{h}^{start} - M\,z_{ih}^{start,k}, \quad \forall i\in N,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <h3 id="z_start-的上界">(26) z_start 的上界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \le t^{start}_{h} + M(1 - z^{start}_{ih})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \le t_{h}^{start} + M\left(1 - z_{ih}^{start,k}\right), \quad \forall i\in N,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：(25)(26)
@@ -572,12 +579,12 @@ T^{D}_{i} \le t^{start}_{h} + M(1 - z^{start}_{ih})
 <li><strong>启发式</strong>：<strong>显式</strong>（但只需比较时刻）。</li>
 </ul>
 <h3 id="z_end-的下界">(27) z_end 的下界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mo>⋅</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \ge t^{end}_{h} - M\cdot z^{end}_{ih}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mspace width="0.167em"></mspace><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \ge t_{h}^{end} - M\,z_{ih}^{end,k}, \quad \forall i\in N,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <h3 id="z_end-的上界">(28) z_end 的上界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \le t^{end}_{h} + M(1 - z^{end}_{ih})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \le t_{h}^{end} + M\left(1 - z_{ih}^{end,k}\right), \quad \forall i\in N,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：<code>z^end_ih = 1 ⇔ T^D_i ≤ t^end_h</code>。</li>
@@ -585,13 +592,13 @@ T^{D}_{i} \le t^{end}_{h} + M(1 - z^{end}_{ih})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="被载时无人机时刻-卡车时刻">(29) 被载时无人机时刻 ≥ 卡车时刻</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mi>T</mi></msubsup><mo>−</mo><mi>M</mi><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \ge T^{T}_{j} - M\cdot\sum_{i\ne j} y^{k}_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \ge T_{j}^{truck,k} - M\sum_{i\in N^{d},i\ne j} y_{ij}^{k}, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <h3 id="被载时无人机时刻-卡车时刻-1">(30) 被载时无人机时刻 ≤
 卡车时刻</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≤</mo><msubsup><mi>T</mi><mi>j</mi><mi>T</mi></msubsup><mo>+</mo><mi>M</mi><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \le T^{T}_{j} + M\cdot\sum_{i\ne j} y^{k}_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>T</mi><mi>j</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mi>M</mi><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \le T_{j}^{truck,k} + M\sum_{i\in N^{d},i\ne j} y_{ij}^{k}, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若无人机没在飞（<code>Σy = 0</code>，即被载），则
@@ -600,8 +607,8 @@ T^{D}_{j} \le T^{T}_{j} + M\cdot\sum_{i\ne j} y^{k}_{ij}
 <li><strong>启发式</strong>：结构（被载时不推进无人机时刻）。</li>
 </ul>
 <h3 id="卡车不得早于无人机到达">(31) 卡车不得早于无人机到达</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>T</mi></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{T}_{j} \ge T^{D}_{j} - M(1 - \sum_{i\ne j} x^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{truck,k} \ge T_{j}^{drone,k} - M\left(1 - \sum_{i\in N^{d},i\ne j} x_{ij}^{k}\right), \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车访问 j 时，不能比无人机先到。</li>
@@ -610,12 +617,12 @@ T^{T}_{j} \ge T^{D}_{j} - M(1 - \sum_{i\ne j} x^{k}_{ij})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="δ-的下界">(32) δ 的下界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \ge t^{start}_{h} - M(1 - \delta_{ih})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \ge t_{h}^{start} - M\left(1 - \delta_{ih}^{k}\right), \quad \forall i\in U,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <h3 id="δ-的上界">(33) δ 的上界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>D</mi></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{i} \le t^{end}_{h} + M(1 - \delta_{ih})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>t</mi><mi>h</mi><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{drone,k} \le t_{h}^{end} + M\left(1 - \delta_{ih}^{k}\right), \quad \forall i\in U,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：<code>δ_ih = 1 ⇔ t^start_h ≤ T^D_i ≤ t^end_h</code>。</li>
@@ -623,8 +630,8 @@ T^{D}_{i} \le t^{end}_{h} + M(1 - \delta_{ih})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="s-的定义">(34) s 的定义</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>s</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub><mo>=</mo><msub><mi>γ</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub><mo>⋅</mo><msub><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub></mrow><annotation encoding="application/x-tex">
-s_{ih} = \gamma_{ih} \cdot \delta_{ih}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>s</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>=</mo><msub><mi>γ</mi><mrow><mi>i</mi><mi>h</mi></mrow></msub><mspace width="0.167em"></mspace><msubsup><mi>δ</mi><mrow><mi>i</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>h</mi><mo>∈</mo><mi>H</mi></mrow><annotation encoding="application/x-tex">
+s_{ih}^{k} = \gamma_{ih}\,\delta_{ih}^{k}, \quad \forall i\in U,\ k\in K,\ h\in H
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：节点在区内（γ）<strong>且</strong>
@@ -634,12 +641,12 @@ s_{ih} = \gamma_{ih} \cdot \delta_{ih}
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="卡车时间窗下界">(35) 卡车时间窗下界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>T</mi></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><mo>≥</mo><msub><mi>e</mi><mi>j</mi></msub><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-T^{T}_{i} + \tau^{truck}_{ij} \ge e_{j} \cdot \sum_{i\ne j} x^{k}_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msub><mi>e</mi><mi>j</mi></msub><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{truck,k} + \tau_{ij}^{truck,k} \ge e_{j}\sum_{i\in N^{d},i\ne j} x_{ij}^{k}, \quad \forall i\in N^{d},\ j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <h3 id="卡车时间窗上界">(36) 卡车时间窗上界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mi>T</mi></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><mo>≤</mo><msub><mi>l</mi><mi>j</mi></msub><mo>⋅</mo><mo>∑</mo><mi>x</mi><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mo>∑</mo><mi>x</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{T}_{i} + \tau^{truck}_{ij} \le l_{j}\cdot\sum x + M(1 - \sum x)
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>i</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>τ</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msub><mi>l</mi><mi>j</mi></msub><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{i}^{truck,k} + \tau_{ij}^{truck,k} \le l_{j}\sum_{i\in N^{d},i\ne j} x_{ij}^{k} + M\left(1 - \sum_{i\in N^{d},i\ne j} x_{ij}^{k}\right), \quad \forall i\in N^{d},\ j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车走 i→j 时，「到达 i 的时刻 +
@@ -650,12 +657,12 @@ T^{T}_{i} + \tau^{truck}_{ij} \le l_{j}\cdot\sum x + M(1 - \sum x)
 <li><strong>启发式</strong>：<strong>显式（最容易忽略的细节）</strong>。</li>
 </ul>
 <h3 id="无人机时间窗下界">(37) 无人机时间窗下界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≥</mo><msub><mi>e</mi><mi>j</mi></msub><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \ge e_{j}\cdot\sum_{i\ne j} y^{k}_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msub><mi>e</mi><mi>j</mi></msub><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \ge e_{j}\sum_{i\in N^{d},i\ne j} y_{ij}^{k}, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <h3 id="无人机时间窗上界">(38) 无人机时间窗上界</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mi>D</mi></msubsup><mo>≤</mo><msub><mi>l</mi><mi>j</mi></msub><mo>⋅</mo><mo>∑</mo><mi>y</mi><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><mo>∑</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{D}_{j} \le l_{j}\cdot\sum y + M(1 - \sum y)
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msub><mi>l</mi><mi>j</mi></msub><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+T_{j}^{drone,k} \le l_{j}\sum_{i\in N^{d},i\ne j} y_{ij}^{k} + M\left(1 - \sum_{i\in N^{d},i\ne j} y_{ij}^{k}\right), \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机飞抵 j 的时刻必须落在时间窗内。</li>
@@ -665,8 +672,8 @@ T^{D}_{j} \le l_{j}\cdot\sum y + M(1 - \sum y)
 <hr />
 <h2 id="能耗-3943">3.1.4 能耗 (39)–(43)</h2>
 <h3 id="能耗公式">(39) 能耗公式</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>d</mi><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo>⋅</mo><mi>L</mi><mo>+</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-E = d \cdot (e_{drone}\cdot L + b)
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>d</mi><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mo>⋅</mo><mi>L</mi><mo>+</mo><mi>b</mi><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+E = d\left(e^{drone}\cdot L + b\right)
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：能耗 = 距离 ×（单位能耗×载荷 +
@@ -677,8 +684,8 @@ E = d \cdot (e_{drone}\cdot L + b)
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="起飞时能耗清零">(40) 起飞时能耗清零</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>≤</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo>−</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>j</mi><mo>≠</mo><mi>i</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
-e^{drone}_{i} \le M(2 - w_{i} - \sum_{j\in U, j\ne i} y^{k}_{ij}), \forall i\in U
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>2</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo>−</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+e_{i}^{drone,k} \le M\left(2 - w_{i}^{k} - \sum_{j\in U,\, i\ne j} y_{ij}^{k}\right), \quad \forall i\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若在 i 起飞（w=1 且有出航弧），则到达 i
@@ -688,12 +695,12 @@ e^{drone}_{i} \le M(2 - w_{i} - \sum_{j\in U, j\ne i} y^{k}_{ij}), \forall i\in 
 <li><strong>启发式</strong>：<strong>显式</strong>（每架次独立累加）。</li>
 </ul>
 <h3 id="累计能耗递推下界">(41) 累计能耗递推（下界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>j</mi></msub><mo>≥</mo><msub><mi>e</mi><mi>i</mi></msub><mo>+</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mi>h</mi></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><msub><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-e_{j} \ge e_{i} + (D^{drone}_{ij} + \sum_{h} d_{ijh}(z^{end}_{ih} - z^{start}_{jh}))\cdot(e_{drone}\cdot(f^{a}_{j} + g^{a}_{j}) + b) - M(1-y_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>e</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>b</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+e_{j}^{drone,k} \ge e_{i}^{drone,k} + \left(D_{ij}^{drone} + \sum_{h\in H} d_{ijh}\left(z_{ih}^{end,k} - z_{jh}^{start,k}\right)\right)\left(e^{drone}\left(f_{j}^{a,k} + g_{j}^{a,k}\right) + b\right) - M\left(1 - y_{ij}^{k}\right)
 </annotation></semantics></math></p>
 <h3 id="累计能耗递推上界">(42) 累计能耗递推（上界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>e</mi><mi>j</mi></msub><mo>≤</mo><mo stretchy="false" form="prefix">(</mo><mi>同</mi><mi>上</mi><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-e_{j} \le (同上) + M(1-y_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>e</mi><mi>i</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>b</mi><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+e_{j}^{drone,k} \le e_{i}^{drone,k} + \left(D_{ij}^{drone} + \sum_{h\in H} d_{ijh}\left(z_{ih}^{end,k} - z_{jh}^{start,k}\right)\right)\left(e^{drone}\left(f_{j}^{a,k} + g_{j}^{a,k}\right) + b\right) + M\left(1 - y_{ij}^{k}\right)
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：无人机飞 i→j 时，累计能耗增加「实际飞行距离 ×
@@ -703,8 +710,8 @@ e_{j} \le (同上) + M(1-y_{ij})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="单架次电量上限">(43) 单架次电量上限</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>≤</mo><msub><mi>η</mi><mrow><mi>S</mi><mi>o</mi><mi>C</mi></mrow></msub><mo>⋅</mo><msub><mi>E</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mrow><annotation encoding="application/x-tex">
-e^{drone}_{j} \le \eta_{SoC} \cdot E_{max} \cdot \sum_{i\ne j} y^{k}_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>e</mi><mi>j</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msup><mi>η</mi><mrow><mi>S</mi><mi>o</mi><mi>C</mi></mrow></msup><msubsup><mi>E</mi><mrow><mi>m</mi><mi>a</mi><mi>x</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+e_{j}^{drone,k} \le \eta^{SoC}E_{max}^{drone}\sum_{i\in U,\, i\ne j} y_{ij}^{k}, \quad \forall j\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：飞抵 j 时累计能耗 ≤ η·电池容量。</li>
@@ -714,12 +721,12 @@ e^{drone}_{j} \le \eta_{SoC} \cdot E_{max} \cdot \sum_{i\ne j} y^{k}_{ij}
 <hr />
 <h2 id="作业序列-4449">3.1.5 作业序列 (44)–(49)</h2>
 <h3 id="仓库排最前">(44) 仓库排最前</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mn>0</mn><mi>i</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
-p^{k}_{0i} = 1, \forall i\in U
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mn>0</mn><mi>i</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+p_{0i}^{k} = 1, \quad \forall i\in U,\ k\in K
 </annotation></semantics></math></p>
 <h3 id="返回仓排最后">(45) 返回仓排最后</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mi>i</mi><mo>,</mo><mi>U</mi></mrow><mi>k</mi></msubsup><mo>+</mo><mn>1</mn><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi></mrow><annotation encoding="application/x-tex">
-p^{k}_{i,U}+1 = 1, \forall i\in U
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn><mo>,</mo><mi>i</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+p_{U+1,i}^{k} = 1, \quad \forall i\in U,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：出发仓先于所有客户，返回仓晚于所有客户。</li>
@@ -727,8 +734,8 @@ p^{k}_{i,U}+1 = 1, \forall i\in U
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="序关系反对称">(46) 序关系反对称</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>p</mi><mrow><mi>j</mi><mi>i</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mo>∀</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow><annotation encoding="application/x-tex">
-p^{k}_{ij} + p^{k}_{ji} = 1, \forall i,j\in U, i\ne j
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>p</mi><mrow><mi>j</mi><mi>i</mi></mrow><mi>k</mi></msubsup><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>,</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+p_{ij}^{k} + p_{ji}^{k} = 1, \quad \forall i,j\in U,\ i\ne j,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：任意两个客户，必有且只有一个先后。</li>
@@ -736,12 +743,12 @@ p^{k}_{ij} + p^{k}_{ji} = 1, \forall i,j\in U, i\ne j
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="位置序号与序关系一致上界">(47) 位置序号与序关系一致（上界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>j</mi></msub><mo>−</mo><msub><mi>u</mi><mi>i</mi></msub><mo>≤</mo><mi>−</mi><mn>1</mn><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub></mrow><annotation encoding="application/x-tex">
-u_{j} - u_{i} \le -1 + (U+2)\cdot p_{ij}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>u</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>u</mi><mi>i</mi><mi>k</mi></msubsup><mo>≤</mo><mi>−</mi><mn>1</mn><mo>+</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mspace width="0.167em"></mspace><msubsup><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+u_{j}^{k} - u_{i}^{k} \le -1 + (U+2)\,p_{ij}^{k}, \quad \forall i\in U,\ j\in U,\ i\ne j,\ k\in K
 </annotation></semantics></math></p>
 <h3 id="位置序号与序关系一致下界">(48) 位置序号与序关系一致（下界）</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>u</mi><mi>j</mi></msub><mo>−</mo><msub><mi>u</mi><mi>i</mi></msub><mo>≥</mo><mn>1</mn><mo>−</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-u_{j} - u_{i} \ge 1 - (U+2)(1 - p_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>u</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>u</mi><mi>i</mi><mi>k</mi></msubsup><mo>≥</mo><mn>1</mn><mo>−</mo><mo stretchy="false" form="prefix">(</mo><mi>U</mi><mo>+</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>p</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+u_{j}^{k} - u_{i}^{k} \ge 1 - (U+2)\left(1 - p_{ij}^{k}\right), \quad \forall i\in U,\ j\in U,\ i\ne j,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：i 先于 j ⇔ j 的位置序号比 i 大。</li>
@@ -749,8 +756,8 @@ u_{j} - u_{i} \ge 1 - (U+2)(1 - p_{ij})
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="只能在卡车停着的点起飞">(49) 只能在卡车停着的点起飞</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>m</mi><mi>T</mi></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mi>T</mi></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>5</mn><mo>−</mo><munder><mo>∑</mo><mi>n</mi></munder><msubsup><mi>y</mi><mrow><mi>j</mi><mi>n</mi></mrow><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><munder><mo>∑</mo><mi>n</mi></munder><msubsup><mi>y</mi><mrow><mi>m</mi><mi>n</mi></mrow><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>m</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>p</mi><mrow><mi>i</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-T^{T}_{m} \ge T^{T}_{j} - M(5 - \sum_{n} y^{k}_{jn} - w^{k}_{j} - \sum_{n} y^{k}_{mn} - w^{k}_{m} - p^{k}_{im})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>T</mi><mi>m</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>T</mi><mi>j</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>5</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo>−</mo><munder><mo>∑</mo><mrow><mi>n</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup></mrow></munder><msubsup><mi>y</mi><mrow><mi>m</mi><mi>n</mi></mrow><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>m</mi><mi>k</mi></msubsup><mo>−</mo><msubsup><mi>p</mi><mrow><mi>i</mi><mi>m</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mrow><annotation encoding="application/x-tex">
+T_{m}^{truck,k} \ge T_{j}^{truck,k} - M\left(5 - y_{ij}^{k} - w_{j}^{k} - \sum_{n\in N^{a}} y_{mn}^{k} - w_{m}^{k} - p_{im}^{k}\right)
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：若在 j 起飞（w_j=1 且有出航弧）、无人机随后到
@@ -765,8 +772,8 @@ m（w_m=1）、且 j 先于 m，则卡车到达 m 的时刻不得早于到达 j�
 <hr />
 <h2 id="载荷容量-5073">3.1.6 载荷容量 (50)–(73)</h2>
 <h3 id="派件总量守恒">(50) 派件总量守恒</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mi>k</mi></munder><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>f</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">
-\sum_{k} F^{k}_{0} = \sum_{i\in U} f_{i}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>f</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">
+\sum_{k\in K} F_{0}^{k} = \sum_{i\in U} f_{i}
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：所有卡车出发时携带的派件总量 =
@@ -774,8 +781,8 @@ m（w_m=1）、且 j 先于 m，则卡车到达 m 的时刻不得早于到达 j�
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="取件总量守恒">(51) 取件总量守恒</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mi>k</mi></munder><msubsup><mi>G</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>g</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">
-\sum_{k} G^{k}_{U+1} = \sum_{i\in U} g_{i}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><msubsup><mi>G</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>g</mi><mi>i</mi></msub></mrow><annotation encoding="application/x-tex">
+\sum_{k\in K} G_{U+1}^{k} = \sum_{i\in U} g_{i}
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：所有卡车回仓带回的取件总量 =
@@ -783,8 +790,8 @@ m（w_m=1）、且 j 先于 m，则卡车到达 m 的时刻不得早于到达 j�
 <li><strong>启发式</strong>：结构。</li>
 </ul>
 <h3 id="各车出发时的派件装载">(52) 各车出发时的派件装载</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>f</mi><mi>j</mi></msub><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><mo stretchy="false" form="prefix">(</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-F^{k}_{0} = \sum_{j\in U} f_{j} \cdot \sum_{i\ne j} (x^{k}_{ij} + y^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>f</mi><mi>j</mi></msub><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><msup><mi>N</mi><mi>d</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+F_{0}^{k} = \sum_{j\in U} f_{j}\sum_{i\in N^{d},i\ne j}\left(x_{ij}^{k} + y_{ij}^{k}\right), \quad \forall k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：卡车 k
@@ -794,33 +801,34 @@ F^{k}_{0} = \sum_{j\in U} f_{j} \cdot \sum_{i\ne j} (x^{k}_{ij} + y^{k}_{ij})
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="回仓时派件清零">(53) 回仓时派件清零</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>F</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
-F^{k}_{U+1} = 0
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>F</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+F_{U+1}^{k} = 0, \quad \forall k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：回到仓库时车上的派件必须全部送完。</li>
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="出发时取件为零">(54) 出发时取件为零</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>G</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">
-G^{k}_{0} = 0
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>G</mi><mn>0</mn><mi>k</mi></msubsup><mo>=</mo><mn>0</mn><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+G_{0}^{k} = 0, \quad \forall k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：出门时没收到任何件。</li>
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="回仓时的取件装载">(55) 回仓时的取件装载</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>G</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>g</mi><mi>i</mi></msub><mo>⋅</mo><munder><mo>∑</mo><mrow><mi>j</mi><mo>≠</mo><mi>i</mi></mrow></munder><mo stretchy="false" form="prefix">(</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">
-G^{k}_{U+1} = \sum_{i\in U} g_{i} \cdot \sum_{j\ne i} (x^{k}_{ij} + y^{k}_{ij})
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>G</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mi>k</mi></msubsup><mo>=</mo><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msub><mi>g</mi><mi>i</mi></msub><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+G_{U+1}^{k} = \sum_{i\in U} g_{i}\sum_{j\in N^{a},i\ne j}\left(x_{ij}^{k} + y_{ij}^{k}\right), \quad \forall k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：回仓时车上带的是「它和它的无人机服务过的客户」的取件量之和。</li>
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="卡车派件量递推">(56)(57) 卡车派件量递推</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>F</mi><mi>i</mi><mi>k</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>−</mo><msubsup><mi>f</mi><mi>i</mi><mi>t</mi></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>F</mi><mi>i</mi><mi>k</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>−</mo><msubsup><mi>f</mi><mi>i</mi><mi>t</mi></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>F</mi><mi>i</mi><mi>k</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>−</mo><msubsup><mi>f</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>F</mi><mi>i</mi><mi>k</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>−</mo><msubsup><mi>f</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-F^{k}_{j} \ge F^{k}_{i} - f_{i} - f^{t}_{i} - M(1 - x^{k}_{ij}) \\ F^{k}_{j} \le F^{k}_{i} - f_{i} - f^{t}_{i} + M(1 - x^{k}_{ij})
+F_{j}^{k} \ge F_{i}^{k} - f_{i} - f_{i}^{t,k} - M\left(1 - x_{ij}^{k}\right), \quad \forall i\in U,\ j\in N^{a},\ i\ne j,\ k\in K \\
+F_{j}^{k} \le F_{i}^{k} - f_{i} - f_{i}^{t,k} + M\left(1 - x_{ij}^{k}\right)
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：卡车走 i→j
 时，j 点的派件在车载量 = i 点的量 − i 点自己送掉的 <code>f_i</code> −
@@ -829,26 +837,28 @@ F^{k}_{j} \ge F^{k}_{i} - f_{i} - f^{t}_{i} - M(1 - x^{k}_{ij}) \\ F^{k}_{j} \le
 是「无人机从卡车拿走多少货」，它必须从卡车账上扣掉，否则重复计。 -
 <strong>启发式</strong>：<strong>显式</strong>。</p>
 <h3 id="卡车取件量递推">(58)(59) 卡车取件量递推</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>G</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>g</mi><mi>i</mi><mi>a</mi></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>G</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>g</mi><mi>i</mi><mi>a</mi></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>G</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>g</mi><mi>i</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>G</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>+</mo><msubsup><mi>g</mi><mi>i</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-G^{k}_{j} \ge G^{k}_{i} + g_{i} + g^{a}_{i} - M(1 - x^{k}_{ij}) \\ G^{k}_{j} \le G^{k}_{i} + g_{i} + g^{a}_{i} + M(1 - x^{k}_{ij})
+G_{j}^{k} \ge G_{i}^{k} + g_{i} + g_{i}^{a,k} - M\left(1 - x_{ij}^{k}\right), \quad \forall i\in U,\ j\in N^{a},\ i\ne j,\ k\in K \\
+G_{j}^{k} \le G_{i}^{k} + g_{i} + g_{i}^{a,k} + M\left(1 - x_{ij}^{k}\right)
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：j
 点取件在车载量 = i 点 + i 点自己收的 <code>g_i</code> + 无人机交回的
 <code>g^a_i</code>。 -
 <strong>启发式</strong>：<strong>显式</strong>。</p>
 <h3 id="出仓首段的初值">(60)(61) 出仓首段的初值</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>G</mi><mn>0</mn><mi>k</mi></msubsup><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>F</mi><mi>j</mi><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>F</mi><mn>0</mn><mi>k</mi></msubsup><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>G</mi><mi>j</mi><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>G</mi><mn>0</mn><mi>k</mi></msubsup><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>x</mi><mrow><mn>0</mn><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-F^{k}_{j} \le F^{k}_{0} + M(1 - x^{k}_{0j}) \\ G^{k}_{j} \ge G^{k}_{0} - M(1 - x^{k}_{0j})
+F_{j}^{k} \le F_{0}^{k} + M\left(1 - x_{0j}^{k}\right), \quad \forall j\in N^{a},\ k\in K \\
+G_{j}^{k} \ge G_{0}^{k} - M\left(1 - x_{0j}^{k}\right), \quad \forall j\in N^{a},\ k\in K
 \end{aligned}
 </annotation></semantics></math> -
 <strong>直译</strong>：从仓库出发的第一段，载荷与出发时的装载一致。 -
 <strong>为什么</strong>：给递推提供初值。 -
 <strong>启发式</strong>：<strong>显式</strong>（循环从 F_0 起）。</p>
 <h3 id="卡车容量">(62) 卡车容量</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>F</mi><mi>i</mi><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>G</mi><mi>i</mi><mi>k</mi></msubsup><mo>≤</mo><msup><mi>Q</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><mo>,</mo><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi></mrow><annotation encoding="application/x-tex">
-F^{k}_{i} + G^{k}_{i} \le Q^{truck}, \forall i\in N
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>F</mi><mi>i</mi></msub><mo>+</mo><msub><mi>G</mi><mi>i</mi></msub><mo>≤</mo><msup><mi>Q</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>N</mi></mrow><annotation encoding="application/x-tex">
+F_{i} + G_{i} \le Q^{truck}, \quad \forall i\in N
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：车上派件 + 取件之和不超过卡车容量。</li>
@@ -857,9 +867,10 @@ F、G 不能合成净值的理由。</li>
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="无人机派件递推">(63)(64) 无人机派件递推</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>≥</mo><msubsup><mi>f</mi><mi>i</mi><mi>t</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><msubsup><mi>f</mi><mi>i</mi><mi>t</mi></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>f</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>f</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msub><mi>f</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-f^{a}_{j} \ge f^{t}_{i} - f_{i}\cdot(1 - w_{i}) - M(1 - y^{k}_{ij}) \\ f^{a}_{j} \le f^{t}_{i} - f_{i}\cdot(1 - w_{i}) + M(1 - y^{k}_{ij})
+f_{j}^{a,k} \ge f_{i}^{t,k} - f_{i}\left(1 - w_{i}^{k}\right) - M\left(1 - y_{ij}^{k}\right), \quad \forall i\in U,\ j\in N^{a},\ i\ne j,\ k\in K \\
+f_{j}^{a,k} \le f_{i}^{t,k} - f_{i}\left(1 - w_{i}^{k}\right) + M\left(1 - y_{ij}^{k}\right)
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：无人机飞 i→j
 后，到达 j 的派件量 = 在 i 交接后的量 − i 点服务掉的部分。 -
@@ -868,16 +879,17 @@ f^{a}_{j} \ge f^{t}_{i} - f_{i}\cdot(1 - w_{i}) - M(1 - y^{k}_{ij}) \\ f^{a}_{j}
 <code>f_i</code>。少这个因子会重复扣减。 -
 <strong>启发式</strong>：<strong>显式（最易错）</strong>。</p>
 <h3 id="无人机取件递推">(65)(66) 无人机取件递推</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo>≥</mo><msubsup><mi>g</mi><mi>i</mi><mi>t</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>−</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><msubsup><mi>g</mi><mi>i</mi><mi>t</mi></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>i</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>M</mi><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>g</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>−</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>i</mi><mo>≠</mo><mi>j</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>g</mi><mi>i</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msub><mi>g</mi><mi>i</mi></msub><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>i</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>M</mi><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-g^{a}_{j} \ge g^{t}_{i} + g_{i}\cdot(1 - w_{i}) - M(1 - y^{k}_{ij}) \\ g^{a}_{j} \le g^{t}_{i} + g_{i}\cdot(1 - w_{i}) + M(1 - y^{k}_{ij})
+g_{j}^{a,k} \ge g_{i}^{t,k} + g_{i}\left(1 - w_{i}^{k}\right) - M\left(1 - y_{ij}^{k}\right), \quad \forall i\in U,\ j\in N^{a},\ i\ne j,\ k\in K \\
+g_{j}^{a,k} \le g_{i}^{t,k} + g_{i}\left(1 - w_{i}^{k}\right) + M\left(1 - y_{ij}^{k}\right)
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：无人机到达 j
 的取件量 = 在 i 交接后的量 + i 点收到的部分。 -
 <strong>启发式</strong>：<strong>显式（最易错）</strong>。</p>
 <h3 id="回收点派件必须清零">(67) 回收点派件必须清零</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><mi>M</mi></mrow><annotation encoding="application/x-tex">
-f^{a}_{j} \le (1 - w_{j})\cdot M
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+f_{j}^{a,k} \le \left(1 - w_{j}^{k}\right)M, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：回收无人机时，机上不应还有派件。</li>
@@ -885,8 +897,8 @@ f^{a}_{j} \le (1 - w_{j})\cdot M
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="起飞点取件必须清零">(68) 起飞点取件必须清零</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>g</mi><mi>j</mi><mi>t</mi></msubsup><mo>≤</mo><mo stretchy="false" form="prefix">(</mo><mn>1</mn><mo>−</mo><msub><mi>w</mi><mi>j</mi></msub><mo stretchy="false" form="postfix">)</mo><mo>⋅</mo><mi>M</mi></mrow><annotation encoding="application/x-tex">
-g^{t}_{j} \le (1 - w_{j})\cdot M
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>g</mi><mi>j</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><mrow><mo stretchy="true" form="prefix">(</mo><mn>1</mn><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><msup><mi>N</mi><mi>a</mi></msup><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+g_{j}^{t,k} \le \left(1 - w_{j}^{k}\right)M, \quad \forall j\in N^{a},\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：起飞时不能带着已收的件出去。</li>
@@ -894,17 +906,18 @@ g^{t}_{j} \le (1 - w_{j})\cdot M
 <li><strong>启发式</strong>：<strong>显式</strong>。</li>
 </ul>
 <h3 id="独飞段不转运">(69)–(72) 独飞段不转运</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>≥</mo><msubsup><mi>f</mi><mi>j</mi><mi>t</mi></msubsup><mo>−</mo><msub><mi>w</mi><mi>j</mi></msub><mo>⋅</mo><mi>M</mi><mo>,</mo><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><msubsup><mi>f</mi><mi>j</mi><mi>t</mi></msubsup><mo>+</mo><msub><mi>w</mi><mi>j</mi></msub><mo>⋅</mo><mi>M</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo>≥</mo><msubsup><mi>g</mi><mi>j</mi><mi>t</mi></msubsup><mo>−</mo><msub><mi>w</mi><mi>j</mi></msub><mo>⋅</mo><mi>M</mi><mo>,</mo><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><msubsup><mi>g</mi><mi>j</mi><mi>t</mi></msubsup><mo>+</mo><msub><mi>w</mi><mi>j</mi></msub><mo>⋅</mo><mi>M</mi></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≥</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>w</mi><mi>j</mi><mi>k</mi></msubsup><mi>M</mi><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-f^{a}_{j} \ge f^{t}_{j} - w_{j}\cdot M , f^{a}_{j} \le f^{t}_{j} + w_{j}\cdot M \\ g^{a}_{j} \ge g^{t}_{j} - w_{j}\cdot M , g^{a}_{j} \le g^{t}_{j} + w_{j}\cdot M
+f_{j}^{a,k} \ge f_{j}^{t,k} - w_{j}^{k}M, \quad f_{j}^{a,k} \le f_{j}^{t,k} + w_{j}^{k}M, \quad \forall j\in U,\ k\in K \\
+g_{j}^{a,k} \ge g_{j}^{t,k} - w_{j}^{k}M, \quad g_{j}^{a,k} \le g_{j}^{t,k} + w_{j}^{k}M, \quad \forall j\in U,\ k\in K
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：若 j
 不是起降点（w=0），到达量 = 交接后量（没有发生过交接）。 -
 <strong>为什么</strong>：唯一会发生转运的时刻是起降点。 -
 <strong>启发式</strong>：结构（只有起降点才走交接逻辑）。</p>
 <h3 id="无人机容量">(73) 无人机容量</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo>≤</mo><msup><mi>Q</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mo>,</mo><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>N</mi></mrow><annotation encoding="application/x-tex">
-f^{a}_{j} + g^{a}_{j} \le Q^{drone}, \forall j\in N
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>≤</mo><msup><mi>Q</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mo>,</mo><mspace width="1.0em"></mspace><mo>∀</mo><mi>j</mi><mo>∈</mo><mi>N</mi><mo>,</mo><mspace width="0.222em"></mspace><mi>k</mi><mo>∈</mo><mi>K</mi></mrow><annotation encoding="application/x-tex">
+f_{j}^{a,k} + g_{j}^{a,k} \le Q^{drone}, \quad \forall j\in N,\ k\in K
 </annotation></semantics></math></p>
 <ul>
 <li><strong>直译</strong>：机上派件 + 取件 ≤ 无人机载重。</li>
@@ -914,10 +927,8 @@ f^{a}_{j} + g^{a}_{j} \le Q^{drone}, \forall j\in N
 </ul>
 <hr />
 <h2 id="目标函数-74">3.2 目标函数 (74)</h2>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><mi>m</mi><mi>i</mi><mi>n</mi><msub><mi>c</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mi>i</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><mo stretchy="false" form="prefix">[</mo><msub><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo>⋅</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>b</mi><mo stretchy="false" form="postfix">]</mo><mo>⋅</mo><mo stretchy="false" form="prefix">[</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mi>h</mi></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="postfix">]</mo><mo>⋅</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>+</mi><msub><mi>c</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>e</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msub><mo>⋅</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><mo>⋅</mo><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>+</mi><msub><mi>c</mi><mrow><mi>c</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>m</mi><mi>e</mi><mi>r</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><msubsup><mi>T</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn><mo>,</mo><mi>k</mi></mrow><mi>T</mi></msubsup></mtd></mtr></mtable><annotation encoding="application/x-tex">
-\begin{aligned}
-min c_{drone} \cdot \sum_{k} \sum_{i} \sum_{j} [ e_{drone}\cdot(f^{a}_{j} + g^{a}_{j}) + b ] \cdot [ D^{drone}_{ij} + \sum_{h} d_{ijh}(z^{end}_{ih} - z^{start}_{jh}) ] \cdot y^{k}_{ij} \\ + c_{truck} \cdot \sum_{k} \sum_{j} \sum_{i} e_{truck} \cdot D^{truck}_{ij} \cdot x^{k}_{ij} \\ + c_{customer} \cdot \sum_{k} T^{T}_{U+1,k}
-\end{aligned}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mi mathvariant="normal">min</mi><mrow><mi>x</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>y</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>z</mi></mrow></munder><mspace width="0.278em"></mspace><msup><mi>c</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">[</mo><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>b</mi><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">)</mo></mrow><mo stretchy="true" form="postfix">]</mo></mrow><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msup><mi>c</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msup><mi>e</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msup><mi>c</mi><mrow><mi>c</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>m</mi><mi>e</mi><mi>r</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><msubsup><mi>T</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup></mrow><annotation encoding="application/x-tex">
+\min_{x,\,y,\,z}\; c^{drone}\sum_{k\in K}\sum_{i\in U,i\ne j}\sum_{j\in U}\left[\left(e^{drone}\left(f_{j}^{a,k} + g_{j}^{a,k}\right) + b\right)\left(D_{ij}^{drone} + \sum_{h\in H} d_{ijh}\left(z_{ih}^{end,k} - z_{jh}^{start,k}\right)\right)\right]y_{ij}^{k} + c^{truck}\sum_{k\in K}\sum_{j\in U,i\ne j}\sum_{i\in U} e^{truck}D_{ij}^{truck}x_{ij}^{k} + c^{customer}\sum_{k\in K} T_{U+1}^{truck,k}
 </annotation></semantics></math> - <strong>直译</strong>：三项成本 ——
 无人机电费（按段载荷计，含绕行距离）+ 卡车油费（按路网距离计）+
 全部司机的工时费（按各车回仓时刻计）。 -
@@ -926,9 +937,12 @@ min c_{drone} \cdot \sum_{k} \sum_{i} \sum_{j} [ e_{drone}\cdot(f^{a}_{j} + g^{a
 <hr />
 <h2 id="线性化-7578-与-79">3.3 线性化 (75)–(78) 与 (79)</h2>
 <h3 id="mccormick-夹逼">(75)–(78) McCormick 夹逼</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msub><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo>≤</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msub><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo>≤</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msub><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msub><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo>≥</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi></mrow></msubsup><mo>−</mo><mn>1</mn></mtd></mtr></mtable><annotation encoding="application/x-tex">
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>≤</mo><mn>1</mn><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><msubsup><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo>≥</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msubsup><mi>z</mi><mrow><mi>i</mi><mi>h</mi></mrow><mrow><mi>e</mi><mi>n</mi><mi>d</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><msubsup><mi>z</mi><mrow><mi>j</mi><mi>h</mi></mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>r</mi><mi>t</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>−</mo><mn>1</mn></mtd></mtr></mtable><annotation encoding="application/x-tex">
 \begin{aligned}
-q_{ijh} \le y^{k}_{ij} \\ q_{ijh} \le z^{end}_{ih} \\ q_{ijh} \le 1 - z^{start}_{jh} \\ q_{ijh} \ge y^{k}_{ij} + z^{end}_{ih} - z^{start}_{jh} - 1
+q_{ijh}^{k} \le y_{ij}^{k} \\
+q_{ijh}^{k} \le z_{ih}^{end,k} \\
+q_{ijh}^{k} \le 1 - z_{jh}^{start,k} \\
+q_{ijh}^{k} \ge y_{ij}^{k} + z_{ih}^{end,k} - z_{jh}^{start,k} - 1
 \end{aligned}
 </annotation></semantics></math> - <strong>直译</strong>：用四条不等式把
 <code>q_ijh = (z^end_ih − z^start_jh)·y^k_ij</code> 这个双线性项线性化。
@@ -936,10 +950,8 @@ q_{ijh} \le y^{k}_{ij} \\ q_{ijh} \le z^{end}_{ih} \\ q_{ijh} \le 1 - z^{start}_
 <strong>启发式</strong>：<strong>MILP</strong>。评估器直接算原式，不需要
 <code>q</code>。</p>
 <h3 id="线性化后的目标">(79) 线性化后的目标</h3>
-<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mtable><mtr><mtd columnalign="right" style="text-align: right"><mi>m</mi><mi>i</mi><mi>n</mi><msub><mi>c</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mi>i</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><mo stretchy="false" form="prefix">(</mo><msub><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msub><mo stretchy="false" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mi>a</mi></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mi>a</mi></msubsup><mo stretchy="false" form="postfix">)</mo><mo>+</mo><mi>b</mi><mo stretchy="false" form="postfix">)</mo><mo stretchy="false" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><mo>⋅</mo><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mi>h</mi></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo>⋅</mo><msub><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><mo stretchy="false" form="postfix">)</mo></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>+</mi><msub><mi>c</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><munder><mo>∑</mo><mi>j</mi></munder><munder><mo>∑</mo><mi>i</mi></munder><msub><mi>e</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msub><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>+</mi><msub><mi>c</mi><mrow><mi>c</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>m</mi><mi>e</mi><mi>r</mi></mrow></msub><mo>⋅</mo><munder><mo>∑</mo><mi>k</mi></munder><msubsup><mi>T</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn><mo>,</mo><mi>k</mi></mrow><mi>T</mi></msubsup></mtd></mtr><mtr><mtd columnalign="right" style="text-align: right"><mi>s</mi><mi>.</mi><mi>t</mi><mi>.</mi><mo stretchy="false" form="prefix">(</mo><mn>2</mn><mo stretchy="false" form="postfix">)</mo><mi>–</mi><mo stretchy="false" form="prefix">(</mo><mn>73</mn><mo stretchy="false" form="postfix">)</mo><mo>,</mo><mo stretchy="false" form="prefix">(</mo><mn>75</mn><mo stretchy="false" form="postfix">)</mo><mi>–</mi><mo stretchy="false" form="prefix">(</mo><mn>78</mn><mo stretchy="false" form="postfix">)</mo></mtd></mtr></mtable><annotation encoding="application/x-tex">
-\begin{aligned}
-min c_{drone} \cdot \sum_{k} \sum_{i} \sum_{j} ( e_{drone}(f^{a}_{j} + g^{a}_{j}) + b )( D^{drone}_{ij}\cdot y^{k}_{ij} + \sum_{h} d_{ijh}\cdot q_{ijh} ) \\ + c_{truck} \cdot \sum_{k} \sum_{j} \sum_{i} e_{truck} D^{truck}_{ij} x^{k}_{ij} \\ + c_{customer} \cdot \sum_{k} T^{T}_{U+1,k} \\ s.t. (2)–(73), (75)–(78)
-\end{aligned}
+<p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><munder><mi mathvariant="normal">min</mi><mrow><mi>x</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>y</mi><mo>,</mo><mspace width="0.167em"></mspace><mi>q</mi></mrow></munder><mspace width="0.278em"></mspace><msup><mi>c</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi></mrow></munder><mrow><mo stretchy="true" form="prefix">(</mo><msup><mi>e</mi><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msup><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>f</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo>+</mo><msubsup><mi>g</mi><mi>j</mi><mrow><mi>a</mi><mo>,</mo><mi>k</mi></mrow></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><mi>b</mi><mo stretchy="true" form="postfix">)</mo></mrow><mrow><mo stretchy="true" form="prefix">(</mo><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>d</mi><mi>r</mi><mi>o</mi><mi>n</mi><mi>e</mi></mrow></msubsup><msubsup><mi>y</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><munder><mo>∑</mo><mrow><mi>h</mi><mo>∈</mo><mi>H</mi></mrow></munder><msub><mi>d</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow></msub><msubsup><mi>q</mi><mrow><mi>i</mi><mi>j</mi><mi>h</mi></mrow><mi>k</mi></msubsup><mo stretchy="true" form="postfix">)</mo></mrow><mo>+</mo><msup><mi>c</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>j</mi><mo>∈</mo><mi>U</mi><mo>,</mo><mi>i</mi><mo>≠</mo><mi>j</mi></mrow></munder><munder><mo>∑</mo><mrow><mi>i</mi><mo>∈</mo><mi>U</mi></mrow></munder><msup><mi>e</mi><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msup><msubsup><mi>D</mi><mrow><mi>i</mi><mi>j</mi></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi></mrow></msubsup><msubsup><mi>x</mi><mrow><mi>i</mi><mi>j</mi></mrow><mi>k</mi></msubsup><mo>+</mo><msup><mi>c</mi><mrow><mi>c</mi><mi>u</mi><mi>s</mi><mi>t</mi><mi>o</mi><mi>m</mi><mi>e</mi><mi>r</mi></mrow></msup><munder><mo>∑</mo><mrow><mi>k</mi><mo>∈</mo><mi>K</mi></mrow></munder><msubsup><mi>T</mi><mrow><mi>U</mi><mo>+</mo><mn>1</mn></mrow><mrow><mi>t</mi><mi>r</mi><mi>u</mi><mi>c</mi><mi>k</mi><mo>,</mo><mi>k</mi></mrow></msubsup></mrow><annotation encoding="application/x-tex">
+\min_{x,\,y,\,q}\; c^{drone}\sum_{k\in K}\sum_{i\in U,i\ne j}\sum_{j\in U}\left(e^{drone}\left(f_{j}^{a,k} + g_{j}^{a,k}\right) + b\right)\left(D_{ij}^{drone}y_{ij}^{k} + \sum_{h\in H} d_{ijh}q_{ijh}^{k}\right) + c^{truck}\sum_{k\in K}\sum_{j\in U,i\ne j}\sum_{i\in U} e^{truck}D_{ij}^{truck}x_{ij}^{k} + c^{customer}\sum_{k\in K} T_{U+1}^{truck,k}
 </annotation></semantics></math> - <strong>直译</strong>：与 (74)
 等价，只是把绕行部分的乘积换成了 <code>q</code>。 -
 <strong>启发式</strong>：<strong>MILP</strong>。</p>
@@ -954,6 +966,11 @@ min c_{drone} \cdot \sum_{k} \sum_{i} \sum_{j} ( e_{drone}(f^{a}_{j} + g^{a}_{j}
 实际是「w=1 且有出航弧 ⇒ e_i = 0」。用 <code>≤</code> 而非
 <code>= 0</code>，是因为 <code>e_i ≥ 0</code> 隐含在物理意义里，MILP
 需要这样写。</li>
+<li><strong>(45) 的下标是 <code>p^k_{U+1,i}</code></strong>，而 (44) 是
+<code>p^k_{0i}</code>。按语义应是 <code>p^k_{i,U+1}</code>（i
+先于返回仓）， 原文疑似笔误，本文件按原样转录并在此标注。</li>
+<li><strong>(62) 原文没有 <code>k</code>
+上标</strong>（<code>F_i + G_i ≤ Q^truck</code>），本文件按原样保留。</li>
 <li><strong><code>F/G/f/g</code> 标为整数</strong>：但需求单位是
 kg（连续量）。按连续实现更合理，否则等于假设货物不可分割。</li>
 </ol>
