@@ -55,18 +55,40 @@ def disable_nfz(inst: Instance) -> Instance:
     return replace(inst, nfz=())
 
 
+def disable_drones(inst: Instance) -> Instance:
+    """Table 3 的 **Truck-only** 对照组：不派任何无人机。
+
+    实现为「开关」而不是「另一个求解器」：`allow_drones=False` 后
+    ① 初始解不做第二阶段改派；② 修复算子不产生无人机候选；③ 破坏算子自然无事可做
+    （解里本来就没有架次）。**车队规模 K 保持不变**——无人机是闲置的，不是减车。
+    """
+    return replace(inst, allow_drones=False)
+
+
+def disable_detour(inst: Instance) -> Instance:
+    """Table 3 的 **Without-detour** 对照：禁飞区照查，但不允许无人机绕行。
+
+    ⚠ 与 `disable_nfz` 是两件事，别混：
+    - `disable_nfz`：把禁飞区整个删掉 → 可行域**变大** → 成本更低；
+    - `disable_detour`：禁飞区还生效，只是穿圆的航段直接禁飞 → 可行域**变小** → 成本更高。
+    论文 Table 3 的 Without-detour 列 Increasing% 全为正，正是后者。
+    """
+    return replace(inst, allow_detour=False)
+
+
 def solve(
     inst: Instance,
     seed: int = 0,
     *,
     use_nfz: bool = True,
+    use_drone: bool = True,
+    use_detour: bool = True,
     iters: int | None = None,
     t0: float | None = None,
     alpha: float | None = None,
     ratio: float | None = None,
     max_no_improve: int | None = None,
 ) -> ALNSResult:
-    cfg = inst.alns if hasattr(inst, "alns") else None
     iters = iters or 2000
     t0 = t0 if t0 is not None else 300.0
     alpha = alpha if alpha is not None else 0.99
@@ -75,6 +97,10 @@ def solve(
 
     if not use_nfz:
         inst = disable_nfz(inst)
+    if not use_drone:
+        inst = disable_drones(inst)
+    if not use_detour:
+        inst = disable_detour(inst)
     rng = np.random.default_rng(seed)
     sol, cur_cost, _ = build_initial(inst)
     res, _ = evaluate(inst, sol)

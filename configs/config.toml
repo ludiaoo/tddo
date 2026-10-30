@@ -57,9 +57,9 @@ nfz_start_h = [1.0, 2.0]          # 班次开始后 1–2 h 起禁飞
 nfz_duration_h = [1.2, 2.2]       # 持续 1.2–2.2 h
 
 [fleet_size]
-# 卡车数量 K 论文未给。策略 capacity：K = max(min_trucks, ceil(总派件量 / 卡车容量))
-# 实测后果：10 节点 → K=1~2；100 节点（总需求近 1 t）→ K=8~9。这是 300 lb 容量下的硬下界。
-# 若 K 恰好取下界，车辆满载率接近 100%，ALNS 的腾挪空间很小；要做灵敏度可调 capacity_slack。
+# 卡车数量 K 论文未给。这里的 capacity 只是**下界**，实际 K 还取「时间窗所需路线数」的较大者
+# （见 src/generator.py 里 routes_needed_by_windows）：只按容量算 Set1 是 1 辆，时间窗却要 3 辆。
+# 实测：50 节点 6–9 辆、100 节点 10–14 辆 —— 与论文 Fig.8 的 9 / 12 吻合。
 policy = "capacity"
 capacity_slack = 1.0              # K = ceil(总需求 × slack / 容量)，>1 表示允许留余量
 min_trucks = 1

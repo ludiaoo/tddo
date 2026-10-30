@@ -140,3 +140,30 @@ def test_绕行会让架次能耗上升(params):
     e_plain = drone_energy(plain.distance, 2.0, params)
     e_detour = drone_energy(detoured.distance, 2.0, params)
     assert e_detour > e_plain
+
+
+def test_关闭绕行后穿圆的航段直接不可飞():
+    """Without-detour 对照是「收紧」而不是「放开」：禁飞区还生效，只是不许绕。
+
+    Table 3 的 Without-detour 列 Increasing% 全为正，正是这个语义；
+    若像 `disable_nfz` 那样把禁飞区整个删掉，成本只会更低、Increase% 会转负。
+    """
+    base = make_base([(-2.0, 0.0), (2.0, 0.0)])
+    zones = [NFZ(cx=0.0, cy=0.0, r=1.0, t_start=0.0, t_end=1000.0, label="z1")]
+
+    with_detour = drone_leg(base, zones, 0, 1, 10.0, 20.0)
+    assert with_detour.feasible
+    assert with_detour.detour > 0.0
+
+    without = drone_leg(base, zones, 0, 1, 10.0, 20.0, allow_detour=False)
+    assert not without.feasible
+    assert without.distance == math.inf
+
+
+def test_关闭绕行不影响未穿圆的航段():
+    base = make_base([(-2.0, 0.0), (2.0, 0.0)])
+    zones = [NFZ(cx=0.0, cy=5.0, r=1.0, t_start=0.0, t_end=1000.0, label="z1")]
+    a = drone_leg(base, zones, 0, 1, 10.0, 20.0)
+    b = drone_leg(base, zones, 0, 1, 10.0, 20.0, allow_detour=False)
+    assert a.feasible and b.feasible
+    assert a.distance == pytest.approx(b.distance)

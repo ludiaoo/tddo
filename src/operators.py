@@ -236,6 +236,8 @@ def _truck_candidates(inst: Instance, sol: Solution, c: int):
 
 def _drone_candidates(inst: Instance, sol: Solution, c: int):
     """所有可行的无人机插入候选（并入已有架次 / 新建架次）。"""
+    if not inst.allow_drones:              # Truck-only 对照组：没有任何无人机候选
+        return []
     out = []
     for idx, r in enumerate(sol.routes):
         specs = route_to_specs(r)
@@ -312,7 +314,7 @@ def repair_truck_first(inst: Instance, rem: Removal, rng) -> Solution | None:
     if sol is None:
         return None
     # 二次转换：把值得的卡车客户改成同车架次
-    improved = True
+    improved = inst.allow_drones
     while improved:
         improved = False
         for idx, r in enumerate(sol.routes):

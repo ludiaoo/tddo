@@ -73,6 +73,7 @@ def drone_leg(
     j: int,
     t_depart: float,
     t_arrive: float,
+    allow_detour: bool = True,
 ) -> FlightLeg:
     """无人机 i→j 的变化距离与可行性。
 
@@ -100,6 +101,9 @@ def drone_leg(
             continue                      # 时间上没交集 → 不绕（Fig.4 的情形 1、6）
         if not segment_intersects_circle(p, q, center, z.r):
             continue                      # 空间上没穿圆 → 不绕
+        if not allow_detour:
+            # Without-detour 对照：不许绕，穿圆即不可飞（是收紧，不是放开）
+            return FlightLeg(distance=INF, detour=INF, feasible=False, blocked_by=(z.label,))
         d: Detour = detour_around_circle(p, q, center, z.r)
         if not d.feasible:
             return FlightLeg(distance=INF, detour=INF, feasible=False, blocked_by=(z.label,))

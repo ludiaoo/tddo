@@ -160,6 +160,14 @@ class Instance:
     n_trucks: int
     params: FleetParams
     seed: int
+    # 是否允许派无人机。False 即 Table 3 的 **Truck-only** 对照组（纯卡车基线）。
+    # 放在 Instance 上而不是算子参数上：这样破坏/修复/初始解三处只需读同一个开关，
+    # 不会出现「初始解没派机、修复却又派了」的不一致。
+    allow_drones: bool = True
+    # 是否允许无人机**绕行**禁飞区。False 即 Table 3 的 **Without-detour** 对照：
+    # 禁飞区仍然生效（节点禁飞 γ·δ 照查），但穿越禁飞区的航段**直接不可飞**（不允许绕）。
+    # 这是「限制」而不是「放开」——所以该列成本必然 ≥ 完整模型（论文里 Increasing% 为正）。
+    allow_detour: bool = True
 
     # ---- 便捷访问 ----
     @property

@@ -1,11 +1,17 @@
-"""跑全部 16 个算例的 ALNS，输出 results/alns_bench.csv。
+"""跑全部 16 个算例，输出 Table 3 口径的三列对照（不含 Gurobi / PSO）。
 
-用法：
-    python -m scripts.run_alns            # 默认轮数：25 客户以内 300、50 客户 150、100 客户 60
-    python -m scripts.run_alns --full     # 按论文参数 2000 轮（很慢）
+    python -m scripts.run_alns                 # 默认：按规模递减轮数，单种子
+    python -m scripts.run_alns --seeds 3       # 多种子取最优（论文用 10）
+    python -m scripts.run_alns --full          # 论文的 2000 轮（很慢）
 
-轮数按规模递减是因为 Python 版的评估器比论文的实现慢，2000 轮 × 16 算例 × 10 种子
-在本机要跑很久；先固定单种子跑通链路，多周期对比留给 M6。
+三列的语义（与论文 Table 3 一致）：
+- **ALNS**：完整模型。Saving% = (Initial − Best)/Initial
+- **Truck-only**：不派无人机（`use_drone=False`，车队规模不变）
+- **Without-detour**：禁飞区照查，但**不许绕行**（`use_detour=False`）：穿圆的航段直接不可飞
+后两列的 Increasing% = (该列成本 − ALNS 成本)/ALNS 成本
+
+轮数按规模递减：Python 版的评估是顺序模拟，100 客户单轮约 0.5 s，
+2000 轮 × 16 算例 × 10 种子在本机要跑十几小时，先固定「能跑完」的预算。
 """
 
 from __future__ import annotations
@@ -18,48 +24,85 @@ from src.alns import solve
 from src.generator import build_instance
 from src.io import PROJECT_ROOT, load_config, load_sets
 
-OUT = PROJECT_ROOT / "results" / "alns_bench.csv"
+OUT = PROJECT_ROOT / "results" / "table3_like.csv"
+
+
+def _iters(n: int) -> int:
+    return 300 if n <= 25 else (150 if n <= 50 else 60)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--full", action="store_true", help="使用论文的 2000 轮")
     ap.add_argument("--seeds", type=int, default=1)
+    ap.add_argument("--skip-extra", action="store_true", help="只跑 ALNS 主列")
     args = ap.parse_args()
 
     cfg = load_config()
     rows = []
     t_all = time.time()
 
+    print(
+        f"{'Set':>3} {'n':>4} {'K':>3} | {'ALNS':>9} {'Init':>9} {'Save':>6} {'CPU':>6} | "
+        f"{'TruckOnly':>9} {'+%':>6} | {'NoDetour':>9} {'+%':>6}"
+    )
+    print("-" * 92)
+
     for s in load_sets():
         inst = build_instance(s, cfg)
-        if args.full:
-            iters = 2000
-        else:
-            iters = 300 if inst.n_customers <= 25 else (150 if inst.n_customers <= 50 else 60)
-        for seed in range(args.seeds):
-            t0 = time.time()
-            r = solve(inst, seed=seed, iters=iters)
-            rows.append(
-                {
-                    "set": inst.set_id,
-                    "problem": inst.base.name,
-                    "city": inst.base.city,
-                    "n_customers": inst.n_customers,
-                    "n_trucks": inst.n_trucks,
-                    "n_nfz": len(inst.nfz),
-                    "initial_cost": round(r.initial_cost, 2),
-                    "best_cost": round(r.best_cost, 2),
-                    "saving_pct": round(r.saving * 100, 2),
-                    "iters": iters,
-                    "seed": seed,
-                    "cpu_s": round(time.time() - t0, 2),
-                }
-            )
-            print(
-                f"Set{inst.set_id:2d} n={inst.n_customers:3d} 初始 {r.initial_cost:8.2f} "
-                f"→ {r.best_cost:8.2f}  {r.saving:5.1%}  {rows[-1]['cpu_s']:6.1f}s"
-            )
+        iters = 2000 if args.full else _iters(inst.n_customers)
+
+        def best_of(**kw) -> tuple[float, float]:
+            best, cpu = float("inf"), 0.0
+            for seed in range(args.seeds):
+                t0 = time.time()
+                r = solve(inst, seed=seed, iters=iters, **kw)
+                cpu += time.time() - t0
+                best = min(best, r.best_cost)
+            return best, cpu
+
+        t0 = time.time()
+        r0 = solve(inst, seed=0, iters=iters)
+        cpu0 = time.time() - t0
+        best, _ = (best_of() if args.seeds > 1 else (r0.best_cost, cpu0))
+
+        row = {
+            "set": inst.set_id,
+            "problem": inst.base.name,
+            "city": inst.base.city,
+            "n_customers": inst.n_customers,
+            "n_trucks": inst.n_trucks,
+            "n_nfz": len(inst.nfz),
+            "initial_cost": round(r0.initial_cost, 2),
+            "alns_cost": round(best, 2),
+            "saving_pct": round((r0.initial_cost - best) / r0.initial_cost * 100, 2),
+            "alns_cpu_s": round(cpu0, 1),
+            "iters": iters,
+        }
+
+        if args.skip_extra:
+            rows.append(row)
+            print(f"{inst.set_id:>3} {inst.n_customers:>4} {inst.n_trucks:>3} | "
+                  f"{best:>9.2f} {r0.initial_cost:>9.2f} {row['saving_pct']:>5.1f}% {cpu0:>5.1f}s")
+            continue
+
+        truck, cpu_t = best_of(use_drone=False)
+        nodet, cpu_n = best_of(use_detour=False)
+        row.update(
+            truckonly_cost=round(truck, 2),
+            truckonly_increase_pct=round((truck - best) / best * 100, 2),
+            truckonly_cpu_s=round(cpu_t, 1),
+            nodetour_cost=round(nodet, 2),
+            nodetour_increase_pct=round((nodet - best) / best * 100, 2),
+            nodetour_cpu_s=round(cpu_n, 1),
+        )
+        rows.append(row)
+        print(
+            f"{inst.set_id:>3} {inst.n_customers:>4} {inst.n_trucks:>3} | {best:>9.2f} "
+            f"{r0.initial_cost:>9.2f} {row['saving_pct']:>5.1f}% {cpu0:>5.1f}s | "
+            f"{truck:>9.2f} {row['truckonly_increase_pct']:>5.1f}% | "
+            f"{nodet:>9.2f} {row['nodetour_increase_pct']:>5.1f}%"
+        )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with open(OUT, "w", newline="", encoding="utf-8") as fh:

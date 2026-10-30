@@ -30,6 +30,8 @@ V_SOC = "SOC"                  # 单架次电量超限
 V_CAP_TRUCK = "CAP_TRUCK"      # 卡车超载
 V_CAP_DRONE = "CAP_DRONE"      # 无人机超载
 V_NFZ = "NFZ"                  # 禁飞区导致不可飞/不可起降
+V_DRONE_BUSY = "DRONE_BUSY"    # 同一架无人机的两个架次在时间上重叠
+V_LR_SAME = "LR_SAME_NODE"     # 同一节点既是回收点又是起飞点（论文的 w_i 表达不了）
 
 
 @dataclass
@@ -89,6 +91,7 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
 
     t = 0.0                      # 到达当前节点的时刻
     drone_arrival: dict[int, float] = {}   # 各架次的无人机抵达回收点时刻
+    busy_until: int | None = None          # 当前在飞架次的回收位置（每车只有一架无人机）
 
     for pos in range(len(nodes) - 1):
         i = nodes[pos]
@@ -101,6 +104,21 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
         # --- 在 i 点：起飞无人机 ---
         s = launch_at.get(pos)
         if s is not None:
+            # 约束 (20)(21)(49)：一辆卡车只配一架无人机，上一个架次没回收就不能再起飞。
+            # 缺这条检查时，评估器会允许「架次嵌套」——两个架次在同一段时间里各飞各的，
+            # 成本被显著低估，而且 ALNS 会主动去找这种非法解（实测抓到过 Set1 的嵌套解）。
+            if pos in recover_at:
+                # 论文只用一个 w_i 表示「起飞或回收」，同一节点同时承担两件事时，
+                # 时刻递推 (23) 会拿卡车到达时刻当无人机起飞基准（此时机还没落地），
+                # 模型内部就不自洽。这里直接判不可行，与模型口径保持一致。
+                ev.violations.append(f"{V_LR_SAME} 位置{pos} 同时是回收点与起飞点")
+                ev.feasible = False
+            if busy_until is not None and pos < busy_until:
+                ev.violations.append(
+                    f"{V_DRONE_BUSY} 位置{pos} 起飞时，上一架次（回收位置 {busy_until}）仍在飞行"
+                )
+                ev.feasible = False
+            busy_until = s.recover
             t += p.launch_time
             t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev)
             if ok:
@@ -132,6 +150,7 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
 
         # --- 回收无人机：卡车必须等无人机到达 ---
         if r is not None:
+            busy_until = None                     # 无人机已回收，可以再次起飞
             ta = drone_arrival.get(pos + 1)
             if ta is not None and ta > t:
                 ev.waiting_time += ta - t
@@ -187,7 +206,7 @@ def _fly_sortie(
 
     for k, nxt in enumerate(seq):
         est = t + _straight(inst, cur, nxt) / p.drone_speed
-        leg = drone_leg(base, inst.nfz, cur, nxt, t, est)
+        leg = drone_leg(base, inst.nfz, cur, nxt, t, est, allow_detour=inst.allow_detour)
         if not leg.feasible:
             ev.violations.append(f"{V_NFZ} 航段 {cur}->{nxt} 不可飞（{leg.blocked_by}）")
             ev.feasible = False

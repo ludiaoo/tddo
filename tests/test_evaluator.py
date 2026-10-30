@@ -200,3 +200,38 @@ def test_sortie位置非法直接报错():
         Sortie(launch=2, recover=1, customers=(3,))
     with pytest.raises(ValueError):
         Sortie(launch=1, recover=2, customers=())
+
+
+def test_架次不能重叠_一架无人机同时只能飞一个架次():
+    """约束 (20)(21)(49)：每车一架机，上一个架次没回收就不能再起飞。
+
+    缺这条检查时评估器会让两个架次在同一段时间各飞各的，成本被显著低估，
+    而 ALNS 会主动去找这种非法解（M6 与 MILP 对标时抓到过）。
+    """
+    from src.evaluator import V_DRONE_BUSY
+
+    inst = make_inst(
+        [(0, 0), (1000, 0), (2000, 0), (3000, 0), (4000, 0)],
+        f=[0, 1, 1, 1, 1], g=[0, 0, 0, 0, 0],
+    )
+    # 架次 A：位置 1 起飞、位置 4 回收；架次 B：位置 2 起飞、位置 3 回收 → 完全嵌套
+    r = Route(truck=0, nodes=[0, 1, 2, 3, 4, 0],
+              sorties=[Sortie(1, 4, (2,)), Sortie(2, 3, (3,))])
+    res, _ = evaluate(inst, Solution([r]))
+    assert not res.feasible
+    assert any(V_DRONE_BUSY in v for v in res.all_violations())
+
+
+def test_同一节点不能既回收又起飞():
+    """论文只用一个 w_i 表示「起飞或回收」，同点连续起降在模型里表达不了。"""
+    from src.evaluator import V_LR_SAME
+
+    inst = make_inst(
+        [(0, 0), (1000, 0), (2000, 0), (3000, 0)],
+        f=[0, 1, 1, 1], g=[0, 0, 0, 0],
+    )
+    r = Route(truck=0, nodes=[0, 1, 2, 3, 0],
+              sorties=[Sortie(1, 2, (3,)), Sortie(2, 3, (1,))])
+    res, _ = evaluate(inst, Solution([r]))
+    assert not res.feasible
+    assert any(V_LR_SAME in v for v in res.all_violations())

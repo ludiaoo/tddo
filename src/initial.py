@@ -167,7 +167,7 @@ def build_initial(inst: Instance) -> tuple[Solution, float, list[str]]:
     routes = []
     for i, nodes in enumerate(raw):
         r = Route(truck=i, nodes=nodes, sorties=[])
-        routes.append(assign_sorties(inst, r))
+        routes.append(assign_sorties(inst, r) if inst.allow_drones else r)
 
     sol = Solution(routes)
     res, cost = evaluate(inst, sol)

@@ -92,8 +92,13 @@ def test_结果可重复(inst):
     assert a.best_cost == pytest.approx(b.best_cost)
 
 
-def test_退化开关_关掉禁飞区后成本不升(inst):
-    """论文的 Without-detour 对照：关掉 NFZ（几何绕行 + 节点禁飞一起关）后成本应更低。"""
+def test_退化开关_关掉禁飞区后同一解的成本不升(inst):
+    """论文的 Without-detour 对照：关掉 NFZ（几何绕行 + 节点禁飞一起关）后成本不升。
+
+    这里**不比较两次独立求解**：ALNS 是启发式，60 轮的随机轨迹不同，
+    「去掉约束后搜出来的解反而略差」是正常的搜索噪声（曾出现 103.60 vs 103.58）。
+    能严格断言的是：把同一份解放到放宽后的算例上重新评估，成本不会更高、且仍然可行。
+    """
     from src.alns import disable_nfz
 
     off = disable_nfz(inst)
@@ -101,5 +106,22 @@ def test_退化开关_关掉禁飞区后成本不升(inst):
     assert inst.nfz != ()            # 原算例不受影响
 
     on_res = solve(inst, seed=1, iters=60)
-    off_res = solve(inst, seed=1, iters=60, use_nfz=False)
-    assert off_res.best_cost <= on_res.best_cost + 1e-6
+    res_off, cost_off = evaluate(off, on_res.best)
+    assert res_off.feasible, res_off.all_violations()[:3]
+    assert cost_off <= on_res.best_cost + 1e-6
+
+
+def test_truck_only_没有架次且成本更高(inst):
+    """Table 3 的 Truck-only 对照组：不派无人机，成本必然不低于 ALNS。"""
+    from src.alns import disable_drones
+
+    off = disable_drones(inst)
+    assert off.allow_drones is False
+    assert inst.allow_drones is True          # 原算例不受影响
+
+    with_d = solve(inst, seed=1, iters=60)
+    truck_only = solve(inst, seed=1, iters=60, use_drone=False)
+    assert all(not r.sorties for r in truck_only.best.routes)
+    assert truck_only.best_cost >= with_d.best_cost - 1e-6
+    res, _ = evaluate(inst, truck_only.best)
+    assert res.feasible, res.all_violations()[:3]
