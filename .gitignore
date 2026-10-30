@@ -26,3 +26,6 @@ Thumbs.db
 
 # 含 Elsevier 原图的对照图，仅本地查看，不入库
 results/figs/compare_with_paper.png
+
+# 含 Elsevier 原图的样式对照图，仅本地查看
+results/figs/style_vs_paper.png

@@ -16,15 +16,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle, Patch
 
+from . import style
 from .generator import build_instance
 from .instance import Instance
 from .io import PROJECT_ROOT, load_config, load_sets
 
 FIG_DIR = PROJECT_ROOT / "results" / "figs"
 
-# 中文字体：Windows 下优先雅黑/黑体，缺失时退回默认（图注会变方框但不报错）
-plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
-plt.rcParams["axes.unicode_minus"] = False
+style.apply()
 
 
 def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool = True):
@@ -42,10 +41,10 @@ def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool
         c = Circle(
             (z.cx / 1000.0, z.cy / 1000.0),
             z.r / 1000.0,
-            facecolor="#E24B4A",
-            alpha=0.12,
-            edgecolor="#A32D2D",
-            linewidth=1.0,
+            facecolor=style.NFZ_FILL,
+            alpha=0.30,
+            edgecolor=style.NFZ_EDGE,
+            linewidth=0.9,
             linestyle="--",
             zorder=1,
         )
@@ -58,23 +57,23 @@ def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool
             ha="center",
             va="bottom",
             fontsize=5.5,
-            color="#A32D2D",
+            color=style.NFZ_EDGE,
             zorder=2,
         )
 
     # 客户：面积随派件量
     demand = inst.f[1:]
     sizes = 12 + 60 * np.sqrt(demand / max(demand.max(), 1e-9))
-    ax.scatter(xy[1:, 0], xy[1:, 1], s=sizes, c="#378ADD", edgecolors="#0C447C",
-               linewidths=0.5, alpha=0.85, zorder=3, label="客户（大小 ∝ √派件量）")
+    ax.scatter(xy[1:, 0], xy[1:, 1], s=sizes, c=style.CUSTOMER, edgecolors="white",
+               linewidths=0.4, alpha=0.9, zorder=3, label="客户（大小 ∝ √派件量）")
 
     # 仓库
-    ax.scatter(*xy[0], s=140, marker="s", c="#2C2C2A", edgecolors="white",
+    ax.scatter(*xy[0], s=110, marker="s", c=style.DEPOT, edgecolors="white",
                linewidths=0.8, zorder=4, label="仓库")
 
     if legend:
-        nfz_proxy = Patch(facecolor="#E24B4A", alpha=0.25, edgecolor="#A32D2D",
-                          linewidth=1.0, linestyle="--", label="禁飞区（时空）")
+        nfz_proxy = Patch(facecolor=style.NFZ_FILL, alpha=0.45, edgecolor=style.NFZ_EDGE,
+                          linewidth=0.9, linestyle="--", label="禁飞区（时空）")
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + [nfz_proxy], labels + ["禁飞区（时空）"],
                   loc="upper left", fontsize=6, framealpha=0.85,
@@ -86,17 +85,16 @@ def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool
     ax.set_xlim(lo[0], hi[0])
     ax.set_ylim(lo[1], hi[1])
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(alpha=0.2, linewidth=0.5)
-    ax.set_xlabel("东向 (km)", fontsize=8)
-    ax.set_ylabel("北向 (km)", fontsize=8)
-    ax.tick_params(labelsize=7)
+    ax.grid(False)                      # 论文的路线图没有网格
+    ax.set_xlabel("东向 (km)")
+    ax.set_ylabel("北向 (km)")
 
     if title is None:
         title = (
             f"Set{inst.set_id} · {inst.base.city} · {inst.n_customers} 客户 · "
             f"K={inst.n_trucks} · NFZ={len(inst.nfz)}"
         )
-    ax.set_title(title, fontsize=9)
+    ax.set_title(title)
     return ax
 
 

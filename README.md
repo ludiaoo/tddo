@@ -75,6 +75,7 @@ python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
 python -m scripts.run_alns         # 16 算例 × 三列（ALNS / Truck-only / Without-detour）→ results/table3_like.csv
 python -m scripts.run_pso          # 在同一批解上补 PSO 列 → results/table3_with_pso.csv
 python -m scripts.run_milp         # 4 个 10 客户算例的 MILP 最优 → results/milp_check.csv
+python -m scripts.style_preview    # 配色核对：色板 + 论文原图并排
 ```
 
 ### 两个容易混淆的开关
@@ -86,6 +87,28 @@ python -m scripts.run_milp         # 4 个 10 客户算例的 MILP 最优 → re
 | 清空 `nfz`（`disable_nfz`） | 禁飞区整个删掉 | 变低 | 只用于诊断，**不是** Without-detour |
 
 Without-detour 是「收紧」不是「放开」——论文 Table 3 该列 Increasing% 全为正，就是这个原因。
+
+### 配图风格
+
+`src/style.py` 统一了配色与画风，**从论文 PDF 里提取**而不是目测：
+
+| 用途 | 调色板 | 说明 |
+|---|---|---|
+| 灵敏度曲线（Fig.9/10/11） | `style.PALETTE` 5 色柔和系 | 青 `#7FC3C3`、薰衣草 `#BCBCDA`、橙 `#EF8B4C`、浅蓝 `#82AAD2`、浅绿 `#93BC80` |
+| 路线图（Fig.8，十几条线） | `style.ROUTES`（tab10） | 浅色分不开十几条路线 |
+| 禁飞区 / 客户 / 仓库 | `NFZ_FILL` `CUSTOMER` `DEPOT` | 粉色虚线圈、灰蓝点、近黑方块 |
+
+```python
+from src import style
+style.apply()                       # 白底、无网格、四边细脊线、Times + 雅黑
+style.line(ax, x, y, i=0, label="…")  # 细线 + 小方块标记
+```
+
+> ⚠ 中文回退**不能用 SimSun/NSimSun**：这两个字体内嵌点阵字模，小于约 8 pt 时
+> matplotlib 渲染出来是**空白**（图例 6 pt 必现，标题 9 pt 正常）。已改用微软雅黑。
+
+`python -m scripts.style_preview` 会输出色板与「论文原图 vs 本项目同风格」的并排核对图
+（后者含 Elsevier 原图，不入库）。
 
 ### 评估器的两条硬规则（容易漏，且会显著影响成本）
 
