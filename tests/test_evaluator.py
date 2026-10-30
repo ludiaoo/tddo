@@ -235,3 +235,23 @@ def test_同一节点不能既回收又起飞():
     res, _ = evaluate(inst, Solution([r]))
     assert not res.feasible
     assert any(V_LR_SAME in v for v in res.all_violations())
+
+
+def test_解序列化往返():
+    """最优解要落盘给画图脚本复用，往返必须无损（nodes/sorties 逐字段相等）。"""
+    from src.solution import Route, Sortie, Solution, solution_from_dict, solution_to_dict
+
+    sol = Solution(
+        [
+            Route(truck=0, nodes=[0, 1, 2, 0], sorties=[Sortie(launch=1, recover=2, customers=(3, 4))]),
+            Route(truck=1, nodes=[0, 5, 0], sorties=[]),
+        ]
+    )
+    d = solution_to_dict(sol)
+    assert all(isinstance(v, int) for r in d["routes"] for v in r["nodes"]), "nodes 里混进了 numpy 类型"
+    back = solution_from_dict(d)
+    assert [r.nodes for r in back.routes] == [r.nodes for r in sol.routes]
+    assert [s.customers for r in back.routes for s in r.sorties] == [
+        s.customers for r in sol.routes for s in r.sorties
+    ]
+    assert back.routes[1].sorties == []

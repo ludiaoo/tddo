@@ -21,7 +21,8 @@ from PIL import Image
 
 from src.generator import build_instance
 from src.io import PROJECT_ROOT, load_config, load_sets
-from src.visualizer import plot_network
+from scripts.plot_routes import get_solution
+from src.visualizer import plot_solution
 
 PDF = PROJECT_ROOT / "Zeng 等 - 2026 - Optimizing bidirectional delivery with multiple drones and trucks a mixed-integer nonlinear model t.pdf"
 PAGE_PNG = PROJECT_ROOT / ".tmp" / "hi20-20.png"
@@ -70,20 +71,19 @@ def main() -> None:
         ax_top.set_axis_off()
 
         inst = build_instance(by_id[sid], cfg)
+        sol, cost, _ = get_solution(inst)
         ax_bot = axes[1, col]
-        plot_network(inst, ax=ax_bot)
+        plot_solution(inst, sol, ax=ax_bot, legend=(sid != PICK[-1]))
         ax_bot.set_title(
-            f"本项目 Set{sid}  K={inst.n_trucks}  NFZ={len(inst.nfz)}", fontsize=9
+            f"本项目 Set{sid}  K={inst.n_trucks}  成本 {cost:.1f}", fontsize=9
         )
-        ax_bot.set_xlabel("东向 (km)", fontsize=7)
-        ax_bot.set_ylabel("北向 (km)", fontsize=7)
 
         axes[0, col].set_title(
             f"{inst.n_customers} 客户", fontsize=10, pad=4,
         )
 
     fig.text(0.02, 0.955, "论文 Fig.8（含路线）", fontsize=10, weight="normal")
-    fig.text(0.02, 0.475, "本项目自建算例（无路线，仅网络与禁飞区）", fontsize=10, weight="normal")
+    fig.text(0.02, 0.475, "本项目：ALNS 求解结果（同配色同画风）", fontsize=10, weight="normal")
     fig.suptitle("算例对照：论文 Fig.8 与本项目生成结果", fontsize=13, y=0.995)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

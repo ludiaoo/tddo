@@ -1,0 +1,58 @@
+{
+ "set": 1,
+ "seed": 0,
+ "iters": 300,
+ "cost": 101.2535,
+ "cpu_s": 0.74,
+ "solution": {
+  "routes": [
+   {
+    "truck": 1,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 0,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 2,
+    "nodes": [
+     0,
+     10,
+     1,
+     5,
+     8,
+     3,
+     4,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       9,
+       7,
+       2
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 4,
+      "customers": [
+       6
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -169,3 +169,48 @@ def validate_structure(sol: Solution, inst: Instance) -> list[str]:
         errs.append(f"出现不存在的客户编号：{sorted(extra)[:8]}")
 
     return errs
+
+
+# ---------------------------------------------------------------- 序列化
+# 用于把 ALNS 的最优解落盘（results/solutions/setXX.json），画路线图时不用重跑。
+
+
+def solution_to_dict(sol: Solution) -> dict:
+    # ⚠ 全部 int()：nodes/customers 里可能混着 numpy.int64，json 会直接抛 TypeError
+    return {
+        "routes": [
+            {
+                "truck": int(r.truck),
+                "nodes": [int(n) for n in r.nodes],
+                "sorties": [
+                    {
+                        "launch": int(s.launch),
+                        "recover": int(s.recover),
+                        "customers": [int(c) for c in s.customers],
+                    }
+                    for s in r.sorties
+                ],
+            }
+            for r in sol.routes
+        ]
+    }
+
+
+def solution_from_dict(d: dict) -> Solution:
+    return Solution(
+        routes=[
+            Route(
+                truck=int(r["truck"]),
+                nodes=[int(n) for n in r["nodes"]],
+                sorties=[
+                    Sortie(
+                        launch=int(s["launch"]),
+                        recover=int(s["recover"]),
+                        customers=tuple(int(c) for c in s["customers"]),
+                    )
+                    for s in r["sorties"]
+                ],
+            )
+            for r in d["routes"]
+        ]
+    )

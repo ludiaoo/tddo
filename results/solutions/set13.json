@@ -1,0 +1,325 @@
+{
+ "set": 13,
+ "seed": 0,
+ "iters": 60,
+ "cost": 636.1628,
+ "cpu_s": 40.53,
+ "solution": {
+  "routes": [
+   {
+    "truck": 11,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 10,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 13,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 1,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 5,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 6,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 7,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 4,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 9,
+    "nodes": [
+     0,
+     31,
+     52,
+     57,
+     40,
+     51,
+     74,
+     41,
+     66,
+     43,
+     77,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 4,
+      "customers": [
+       26,
+       33,
+       60,
+       13
+      ]
+     },
+     {
+      "launch": 5,
+      "recover": 8,
+      "customers": [
+       3,
+       16
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 3,
+    "nodes": [
+     0,
+     11,
+     12,
+     82,
+     81,
+     95,
+     54,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 5,
+      "recover": 6,
+      "customers": [
+       79,
+       63
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       21,
+       50,
+       84
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 4,
+      "customers": [
+       35
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 0,
+    "nodes": [
+     0,
+     48,
+     10,
+     25,
+     44,
+     2,
+     42,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 4,
+      "recover": 5,
+      "customers": [
+       83,
+       9,
+       75,
+       55
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       58,
+       91,
+       80,
+       78
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 2,
+    "nodes": [
+     0,
+     71,
+     47,
+     93,
+     68,
+     46,
+     72,
+     92,
+     36,
+     62,
+     49,
+     86,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 10,
+      "recover": 11,
+      "customers": [
+       30,
+       94
+      ]
+     },
+     {
+      "launch": 4,
+      "recover": 5,
+      "customers": [
+       1,
+       85,
+       38
+      ]
+     },
+     {
+      "launch": 2,
+      "recover": 3,
+      "customers": [
+       17,
+       14
+      ]
+     },
+     {
+      "launch": 6,
+      "recover": 8,
+      "customers": [
+       67,
+       69,
+       73,
+       90
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 12,
+    "nodes": [
+     0,
+     88,
+     89,
+     27,
+     76,
+     53,
+     99,
+     37,
+     39,
+     29,
+     61,
+     20,
+     23,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 3,
+      "recover": 5,
+      "customers": [
+       6,
+       18,
+       70
+      ]
+     },
+     {
+      "launch": 7,
+      "recover": 11,
+      "customers": [
+       7,
+       28,
+       64,
+       4
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       96
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 8,
+    "nodes": [
+     0,
+     59,
+     98,
+     45,
+     87,
+     56,
+     19,
+     32,
+     65,
+     100,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 5,
+      "customers": [
+       8,
+       5,
+       24,
+       22
+      ]
+     },
+     {
+      "launch": 6,
+      "recover": 9,
+      "customers": [
+       97,
+       15,
+       34
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

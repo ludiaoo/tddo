@@ -1,0 +1,178 @@
+{
+ "set": 9,
+ "seed": 0,
+ "iters": 150,
+ "cost": 416.0484,
+ "cpu_s": 18.94,
+ "solution": {
+  "routes": [
+   {
+    "truck": 8,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 3,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 4,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 7,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 0,
+    "nodes": [
+     0,
+     30,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 2,
+    "nodes": [
+     0,
+     44,
+     33,
+     19,
+     1,
+     36,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       38,
+       13
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 4,
+      "customers": [
+       27
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 6,
+    "nodes": [
+     0,
+     46,
+     17,
+     43,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 1,
+    "nodes": [
+     0,
+     41,
+     31,
+     34,
+     14,
+     49,
+     35,
+     20,
+     39,
+     29,
+     18,
+     28,
+     10,
+     24,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 10,
+      "recover": 11,
+      "customers": [
+       7,
+       48,
+       25
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 7,
+      "customers": [
+       32,
+       6
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 5,
+    "nodes": [
+     0,
+     26,
+     37,
+     9,
+     16,
+     47,
+     50,
+     23,
+     21,
+     5,
+     2,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 3,
+      "recover": 7,
+      "customers": [
+       4,
+       12,
+       3,
+       11
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       8,
+       22,
+       15
+      ]
+     },
+     {
+      "launch": 9,
+      "recover": 10,
+      "customers": [
+       40,
+       45,
+       42
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

@@ -55,6 +55,8 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 
 - `M0_论文要点笔记.md`：复现对象的问题、符号、约束地图、算法与参数
 - `M6_对标结果.md`：Table 3 三列对照 + Gurobi 小规模验证 + 口径差异说明
+- `results/figs/routes_fig8.png`：四个代表算例的求解路线（卡车实线、无人机虚线、禁飞区粉圈）
+- `results/figs/compare_with_paper.png`：与论文 Fig.8 同版式对照（含 Elsevier 原图，不入库）
 - `约束逐条翻译_2-79.md`：79 条约束逐条公式 + 直译 + 为什么需要 + 启发式如何处理
 - `约束逐条翻译_2-79.html`：同上，公式已渲染（MathML，离线可看）
 
@@ -68,6 +70,8 @@ python -m scripts.build_docs        # 需要 pandoc 3.x
 
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
+python -m scripts.plot_routes # ALNS 解的路线图（Fig.8 同款）→ results/figs/routes_fig8.png
+                              # 解缓存在 results/solutions/setXX.json，--refresh 重新求解
 pip install -r requirements-dev.txt
 python -m pytest -q           # 183 项（默认跳过需要 Gurobi 的 4 项）
 python -m pytest -q -m slow   # 4 项 MILP 测试：与评估器逐项对账 + 不劣于 ALNS

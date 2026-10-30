@@ -1,0 +1,94 @@
+{
+ "set": 5,
+ "seed": 0,
+ "iters": 300,
+ "cost": 218.4671,
+ "cpu_s": 7.93,
+ "solution": {
+  "routes": [
+   {
+    "truck": 3,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 1,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 2,
+    "nodes": [
+     0,
+     4,
+     22,
+     20,
+     24,
+     25,
+     2,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 4,
+      "recover": 6,
+      "customers": [
+       15,
+       14,
+       12
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       3,
+       11
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 0,
+    "nodes": [
+     0,
+     1,
+     8,
+     19,
+     23,
+     5,
+     21,
+     17,
+     9,
+     10,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 5,
+      "recover": 9,
+      "customers": [
+       16,
+       13
+      ]
+     },
+     {
+      "launch": 1,
+      "recover": 3,
+      "customers": [
+       6,
+       7,
+       18
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
