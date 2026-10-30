@@ -174,3 +174,45 @@ def build_initial(inst: Instance) -> tuple[Solution, float, list[str]]:
     if not res.feasible:
         notes.extend(res.all_violations()[:5])
     return sol, cost, notes
+
+
+def ordered_routes(inst: Instance, order, max_routes: int) -> list[list[int]] | None:
+    """按**给定客户顺序**做尾部追加构造（供 PSO 解码使用）。
+
+    与 `slack_first_routes` 的唯一差别是排序依据：这里完全听 `order`，
+    不再按 slack 挑人。规则本身（追加后时间窗不破 + 派件不超容量 + 装不下就收车）
+    保持一致，这样 PSO 与 ALNS 比的是**搜索能力**，而不是谁的解码器更强。
+
+    返回 None 表示该顺序无法构造出可行解（某个客户单独一条路线也放不进去）。
+    """
+    base = inst.base
+    routes: list[list[int]] = []
+    route = [DEPOT]
+    t = 0.0
+    f_total = 0.0
+
+    for c in order:
+        travel = float(base.truck_time_s[route[-1], c])
+        arr = _arrival(t, travel, inst.tw[c - 1].e)
+        fits = (
+            arr <= inst.tw[c - 1].l + 1e-6
+            and f_total + float(inst.f[c]) <= inst.params.truck_capacity + 1e-9
+        )
+        if not fits:
+            if len(route) > 1:
+                routes.append(route + [DEPOT])
+            route = [DEPOT]
+            t = 0.0
+            f_total = 0.0
+            arr = _arrival(0.0, float(base.truck_time_s[DEPOT, c]), inst.tw[c - 1].e)
+            if arr > inst.tw[c - 1].l + 1e-6 or float(inst.f[c]) > inst.params.truck_capacity:
+                return None                     # 单独一条路线也放不进去
+        route.append(int(c))
+        t = arr + inst.params.service_time
+        f_total += float(inst.f[c])
+        if len(routes) >= max_routes:
+            return None
+
+    if len(route) > 1:
+        routes.append(route + [DEPOT])
+    return routes

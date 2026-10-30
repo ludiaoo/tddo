@@ -44,9 +44,11 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 |---|---|
 | 取件 | `g_i ~ U(0, f_i)`，向上取整到 0.5 lb |
 | 时间窗 | `e_i = 0.9·τ(depot→i) + U(0,3)h`，宽 `U(30,90)` min |
-| 禁飞区 | 数量 `clamp(round(n/8), 2, 8)`（10→2、50→6、100→8），半径 `U(250,600)` m，圆心 = 客户点偏移 `0.25–0.55r`，时段 = 班次开始后 1–2 h 起、持续 1.2–2.2 h |
+| 禁飞区 | 数量 `clamp(round(n/8), 2, 8)`（10→2、50→6、100→8），半径 **`U(600,1200)` m**，圆心 = 客户点偏移 `0.25–0.55r`，时段 = 班次开始后 1–2 h 起、持续 1.2–2.2 h |
 | 车队规模 | `K = max(容量下界, 时间窗所需路线数)`；只按容量会低估（Set1 容量只需 1 辆、时间窗要 3 辆） |
 
+> 半径刻意大于论文 Fig.8 的观感（150–500 m）：按那个标度只有 3.7% 的航段需绕行、中位 12 m，
+> Without-detour 对照组恒为 0，绕行机制等于没复现出来。放大到 600–1200 m 后绕行率 6.6%、中位 56 m。
 > Table 3 的数字**不可能逐格复现**，因为改造规则本身未公开；本项目只要求趋势与量级一致。
 
 ## 文档
@@ -67,10 +69,11 @@ python -m scripts.build_docs        # 需要 pandoc 3.x
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
 pip install -r requirements-dev.txt
-python -m pytest -q           # 179 项（默认跳过需要 Gurobi 的 4 项）
+python -m pytest -q           # 183 项（默认跳过需要 Gurobi 的 4 项）
 python -m pytest -q -m slow   # 4 项 MILP 测试：与评估器逐项对账 + 不劣于 ALNS
 python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
 python -m scripts.run_alns         # 16 算例 × 三列（ALNS / Truck-only / Without-detour）→ results/table3_like.csv
+python -m scripts.run_pso          # 在同一批解上补 PSO 列 → results/table3_with_pso.csv
 python -m scripts.run_milp         # 4 个 10 客户算例的 MILP 最优 → results/milp_check.csv
 ```
 
@@ -113,7 +116,7 @@ results/      结果 CSV 与图
 - [x] M3 解的表示与成本评估
 - [x] M4 初始可行解构造
 - [x] M5 改进算法：ALNS 主循环
-- [x] M6 实验与结果对标（Gurobi 小规模验证 + Truck-only + Without-detour；PSO 对照未做）
+- [x] M6 实验与结果对标（Gurobi 小规模验证 + Truck-only + Without-detour + PSO）
 - [ ] M7 灵敏度分析与可视化
 - [ ] M8 整理与交付
 
