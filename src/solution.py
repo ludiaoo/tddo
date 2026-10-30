@@ -86,6 +86,37 @@ class Solution:
         return out
 
 
+
+def route_to_specs(route: Route) -> list[tuple[int, int, tuple[int, ...]]]:
+    """把 Route 的架次转成「按节点编号」的锚点描述。
+
+    算子内部一律用这个表示：位置下标会随节点增删平移，节点编号不会。
+    """
+    return [(route.nodes[s.launch], route.nodes[s.recover], tuple(s.customers)) for s in route.sorties]
+
+
+def route_from_specs(truck: int, nodes: list[int], specs) -> Route:
+    """按节点编号重建 Route；锚点已不在路径上或位置冲突的架次会被丢弃。"""
+    pos = {n: i for i, n in enumerate(nodes)}
+    out: list[Sortie] = []
+    seen_l: set[int] = set()
+    seen_r: set[int] = set()
+    for p, q, cust in specs:
+        if p not in pos or q not in pos:
+            continue
+        a, b = pos[p], pos[q]
+        if b <= a or a in seen_l or b in seen_r:
+            continue
+        # 注意：架次里的客户是**节点编号**，不一定出现在卡车路径上（无人机服务的客户就不在），
+        # 所以这里绝不能按「是否在 nodes 里」过滤，否则整个架次会被清空。
+        if not cust:
+            continue
+        out.append(Sortie(launch=a, recover=b, customers=tuple(cust)))
+        seen_l.add(a)
+        seen_r.add(b)
+    return Route(truck=truck, nodes=list(nodes), sorties=out)
+
+
 def validate_structure(sol: Solution, inst: Instance) -> list[str]:
     """结构合法性检查：只查「解的形状」，不查时间/电量/载荷。
 
