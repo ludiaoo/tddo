@@ -90,3 +90,16 @@ def test_结果可重复(inst):
     a = solve(inst, seed=3, iters=40)
     b = solve(inst, seed=3, iters=40)
     assert a.best_cost == pytest.approx(b.best_cost)
+
+
+def test_退化开关_关掉禁飞区后成本不升(inst):
+    """论文的 Without-detour 对照：关掉 NFZ（几何绕行 + 节点禁飞一起关）后成本应更低。"""
+    from src.alns import disable_nfz
+
+    off = disable_nfz(inst)
+    assert off.nfz == ()
+    assert inst.nfz != ()            # 原算例不受影响
+
+    on_res = solve(inst, seed=1, iters=60)
+    off_res = solve(inst, seed=1, iters=60, use_nfz=False)
+    assert off_res.best_cost <= on_res.best_cost + 1e-6

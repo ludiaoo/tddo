@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
@@ -45,10 +45,21 @@ def _roulette(rng, weights: dict[str, float]) -> str:
     return names[int(rng.choice(len(names), p=w / w.sum()))]
 
 
+def disable_nfz(inst: Instance) -> Instance:
+    """论文 §4「退化开关」：关掉禁飞区后框架退化为标准 VRPD。
+
+    **两套判据必须一起关**：几何绕行（Fig.4/5）与节点禁飞（Fig.3）都由 `inst.nfz` 驱动，
+    清空它等于两个模块同时关闭。只关其一会得到论文没有的"第三种模型"，
+    Table 3 的 Without-detour 对照就无法对应。
+    """
+    return replace(inst, nfz=())
+
+
 def solve(
     inst: Instance,
     seed: int = 0,
     *,
+    use_nfz: bool = True,
     iters: int | None = None,
     t0: float | None = None,
     alpha: float | None = None,
@@ -62,6 +73,8 @@ def solve(
     ratio = ratio if ratio is not None else 0.30
     max_no_improve = max_no_improve or 200
 
+    if not use_nfz:
+        inst = disable_nfz(inst)
     rng = np.random.default_rng(seed)
     sol, cur_cost, _ = build_initial(inst)
     res, _ = evaluate(inst, sol)

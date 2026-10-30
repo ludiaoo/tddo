@@ -66,8 +66,9 @@ python -m scripts.build_docs        # 需要 pandoc 3.x
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
 pip install -r requirements-dev.txt
-python -m pytest -q           # 152 项：数据接入 + 算例规则 + 几何/能耗 + 评估器 + 初始解 + 金标准回归
+python -m pytest -q           # 174 项：数据接入 + 算例规则 + 几何/能耗 + 评估器 + 初始解 + 算子 + 金标准回归
 python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
+python -m scripts.run_alns         # 16 算例跑 ALNS，输出 results/alns_bench.csv
 ```
 
 `data/instances/*.json` 是**金标准**：任何人改了 `src/generator.py` 或 `configs/config.toml`，
@@ -91,7 +92,7 @@ results/      结果 CSV 与图
 - [x] M2 基础计算：距离、绕行与能耗
 - [x] M3 解的表示与成本评估
 - [x] M4 初始可行解构造
-- [ ] M5 改进算法：ALNS 主循环
+- [x] M5 改进算法：ALNS 主循环
 - [ ] M6 实验与结果对标
 - [ ] M7 灵敏度分析与可视化
 - [ ] M8 整理与交付
