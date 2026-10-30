@@ -67,7 +67,7 @@ python -m scripts.build_docs        # 需要 pandoc 3.x
 ```bash
 python -m src.visualizer      # 输出 results/figs/set01..16_network.png 与 all_sets.png
 pip install -r requirements-dev.txt
-python -m pytest -q           # 177 项（默认跳过需要 Gurobi 的 4 项）
+python -m pytest -q           # 179 项（默认跳过需要 Gurobi 的 4 项）
 python -m pytest -q -m slow   # 4 项 MILP 测试：与评估器逐项对账 + 不劣于 ALNS
 python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
 python -m scripts.run_alns         # 16 算例 × 三列（ALNS / Truck-only / Without-detour）→ results/table3_like.csv
