@@ -17,9 +17,13 @@ service_s = 60.0                  # [论文未给] 无人机服务时间；卡�
 [energy]
 # 式(39)：E = d · (e_drone · L + b)
 # 注意：论文 Table 2 把 b 的单位标成 kWh，但代入式(39) 时 b 必须与 e_drone·L 同量纲 → 实际是 kWh/km
-e_drone_kwh_per_kg_km = 5.0e-4    # [论文未给]
-b_kwh_per_km = 0.05               # [论文未给] 空载单位距离能耗
-e_truck_l_per_km = 0.35           # [论文未给]
+# 校准依据（论文未给数值，按物理量级定）：
+#   电池 0.78 kWh × η 0.8 = 0.624 kWh 可用；空载航程 = 0.624 / b
+#   b=0.02 → 31 km（65 km/h 约 29 min），与 0.78 kWh 级配送机相符
+#   b=0.05 → 12.5 km（11 min），对这块电池明显不合理，会让绝大多数无人机插入因续航不可行
+e_drone_kwh_per_kg_km = 8.0e-4    # 10 lb 载荷使每公里能耗 +18%
+b_kwh_per_km = 0.02               # 空载单位距离能耗，对应空载航程约 31 km
+e_truck_l_per_km = 0.35           # 重型货车常见值
 
 [cost]
 c_drone_per_kwh = 0.15            # [论文未给]
