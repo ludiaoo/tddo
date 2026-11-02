@@ -104,9 +104,11 @@ Without-detour 是「收紧」不是「放开」——论文 Table 3 该列 Incr
 
 ```python
 from src import style
-style.apply()                       # 白底、无网格、四边细脊线、Times + 雅黑
+style.apply()                       # 白底、浅灰网格、四边细脊线、Times + 雅黑回退
 style.line(ax, x, y, i=0, label="…")  # 细线 + 小方块标记
 ```
+
+图内文字（标题、轴标签、图例）**一律英文**，与论文一致；代码注释与文档仍用中文。
 
 > ⚠ 中文回退**不能用 SimSun/NSimSun**：这两个字体内嵌点阵字模，小于约 8 pt 时
 > matplotlib 渲染出来是**空白**（图例 6 pt 必现，标题 9 pt 正常）。已改用微软雅黑。
