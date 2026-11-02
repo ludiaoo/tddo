@@ -23,12 +23,14 @@ def test_调色板长度与去重():
     assert len(set(style.ROUTES)) >= 12          # 路线图要能分开十几条线
 
 
-def test_apply_设置字体族为列表():
+def test_apply_设置字体族为列表且默认开网格():
     """matplotlib 只在 font.family 是**列表**时才做逐字回退（中文靠这个）。"""
     style.apply()
     fam = plt.rcParams["font.family"]
     assert isinstance(fam, list) and len(fam) >= 2
     assert "SimSun" not in fam, "SimSun 内嵌点阵，小字号会渲染成空白"
+    assert plt.rcParams["axes.grid"] is True
+    assert plt.rcParams["axes.axisbelow"] is True
 
 
 def test_小字号中文能渲染出非零宽度():

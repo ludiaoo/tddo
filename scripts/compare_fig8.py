@@ -75,16 +75,16 @@ def main() -> None:
         ax_bot = axes[1, col]
         plot_solution(inst, sol, ax=ax_bot, legend=(sid != PICK[-1]))
         ax_bot.set_title(
-            f"本项目 Set{sid}  K={inst.n_trucks}  成本 {cost:.1f}", fontsize=9
+            f"Ours  Set{sid}  K={inst.n_trucks}  cost {cost:.1f}", fontsize=9
         )
 
         axes[0, col].set_title(
-            f"{inst.n_customers} 客户", fontsize=10, pad=4,
+            f"{inst.n_customers} customers", fontsize=10, pad=4,
         )
 
-    fig.text(0.02, 0.955, "论文 Fig.8（含路线）", fontsize=10, weight="normal")
-    fig.text(0.02, 0.475, "本项目：ALNS 求解结果（同配色同画风）", fontsize=10, weight="normal")
-    fig.suptitle("算例对照：论文 Fig.8 与本项目生成结果", fontsize=13, y=0.995)
+    fig.text(0.02, 0.955, "Paper Fig.8 (with routes)", fontsize=10)
+    fig.text(0.02, 0.475, "This project: ALNS solutions (same palette & style)", fontsize=10)
+    fig.suptitle("Instance comparison: paper Fig.8 vs. this project", fontsize=13, y=0.995)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(OUT, dpi=150, bbox_inches="tight")

@@ -88,7 +88,7 @@ def main() -> None:
         sol, cost, cached = get_solution(inst, refresh=args.refresh)
         plot_solution(
             inst, sol, ax=ax,
-            title=f"Set{sid} · {inst.n_customers} 客户 · K={inst.n_trucks} · 成本 {cost:.1f}",
+            title=f"Set{sid} · {inst.n_customers} customers · K={inst.n_trucks} · cost {cost:.1f}",
         )
         tag = "缓存" if cached else "新解"
         print(f"Set{sid:2d} n={inst.n_customers:3d} 成本 {cost:9.2f}  [{tag}]")
@@ -96,7 +96,8 @@ def main() -> None:
     for ax in axes[n:]:
         ax.set_axis_off()
 
-    fig.suptitle("ALNS 求解结果：卡车实线（每车一色）+ 无人机虚线 + 时空禁飞区", fontsize=11)
+    fig.suptitle("ALNS solutions: truck routes (solid, one color per truck) + drone sorties (dashed) + no-fly zones",
+                 fontsize=11)
     fig.tight_layout(rect=(0, 0, 1, 0.97))
     out = FIG_DIR / ("routes_all.png" if args.all else "routes_fig8.png")
     out.parent.mkdir(parents=True, exist_ok=True)

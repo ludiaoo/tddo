@@ -60,12 +60,11 @@ def _setup_axes(inst: Instance, ax, title: str | None) -> None:
     ax.set_xlim(lo[0], hi[0])
     ax.set_ylim(lo[1], hi[1])
     ax.set_aspect("equal", adjustable="box")
-    ax.grid(False)
-    ax.set_xlabel("东向 (km)")
-    ax.set_ylabel("北向 (km)")
+    ax.set_xlabel("East (km)")
+    ax.set_ylabel("North (km)")
     if title is None:
         title = (
-            f"Set{inst.set_id} · {inst.base.city} · {inst.n_customers} 客户 · "
+            f"Set{inst.set_id} · {inst.base.city} · {inst.n_customers} customers · "
             f"K={inst.n_trucks} · NFZ={len(inst.nfz)}"
         )
     ax.set_title(title)
@@ -87,17 +86,17 @@ def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool
     demand = inst.f[1:]
     sizes = 12 + 60 * np.sqrt(demand / max(demand.max(), 1e-9))
     ax.scatter(xy[1:, 0], xy[1:, 1], s=sizes, c=style.CUSTOMER, edgecolors="white",
-               linewidths=0.4, alpha=0.9, zorder=3, label="客户（大小 ∝ √派件量）")
+               linewidths=0.4, alpha=0.9, zorder=3, label="Customers (size ∝ √demand)")
 
     # 仓库
     ax.scatter(*xy[0], s=110, marker="s", c=style.DEPOT, edgecolors="white",
-               linewidths=0.8, zorder=4, label="仓库")
+               linewidths=0.8, zorder=4, label="Depot")
 
     if legend:
         nfz_proxy = Patch(facecolor=style.NFZ_FILL, alpha=0.45, edgecolor=style.NFZ_EDGE,
-                          linewidth=0.9, linestyle="--", label="禁飞区（时空）")
+                          linewidth=0.9, linestyle="--", label="No-fly zone (space-time)")
         handles, labels = ax.get_legend_handles_labels()
-        ax.legend(handles + [nfz_proxy], labels + ["禁飞区（时空）"],
+        ax.legend(handles + [nfz_proxy], labels + ["No-fly zone (space-time)"],
                   loc="upper left", fontsize=6, framealpha=0.85,
                   handletextpad=0.4, borderpad=0.3, labelspacing=0.3)
 
@@ -133,7 +132,7 @@ def plot_solution(
         xs = [inst.base.nodes[n].x / 1000.0 for n in r.nodes]
         ys = [inst.base.nodes[n].y / 1000.0 for n in r.nodes]
         ax.plot(xs, ys, color=c, linewidth=1.2, alpha=0.95, zorder=3,
-                solid_capstyle="round", label=f"卡车{r.truck}")
+                solid_capstyle="round", label=f"Truck {r.truck}")
         used += 1
 
         for s in r.sorties:
@@ -153,9 +152,9 @@ def plot_solution(
     if truck_served:
         idx = sorted(truck_served)
         ax.scatter(xy[idx, 0], xy[idx, 1], s=10, c=style.CUSTOMER, edgecolors="white",
-                   linewidths=0.4, zorder=5, label="卡车直服客户")
+                   linewidths=0.4, zorder=5, label="Truck-served customers")
     ax.scatter(*xy[0], s=70, marker="s", c=style.DEPOT, edgecolors="white",
-               linewidths=0.7, zorder=6, label="仓库")
+               linewidths=0.7, zorder=6, label="Depot")
 
     if legend:
         from matplotlib.lines import Line2D
@@ -170,18 +169,18 @@ def plot_solution(
                 handles.append(Line2D([], [], color="none", label="…"))
                 break
             handles.append(Line2D([], [], color=style.route_color(r.truck), linewidth=1.2,
-                                  label=f"卡车{r.truck}"))
+                                  label=f"Truck {r.truck}"))
             n_shown += 1
         handles.append(Line2D([], [], color="#888888", linewidth=0.9,
-                              linestyle=(0, (3, 2)), label="无人机架次"))
+                              linestyle=(0, (3, 2)), label="Drone sorties"))
         handles.append(Line2D([], [], color=style.CUSTOMER, marker="o", linestyle="none",
-                              markersize=3.5, label="卡车直服客户"))
+                              markersize=3.5, label="Truck-served customers"))
         handles.append(Line2D([], [], color=style.DEPOT, marker="s", linestyle="none",
-                              markersize=5, label="仓库"))
+                              markersize=5, label="Depot"))
         if inst.nfz:
             handles.append(Patch(facecolor=style.NFZ_FILL, alpha=0.45,
                                  edgecolor=style.NFZ_EDGE, linewidth=0.9,
-                                 linestyle="--", label="禁飞区（时空）"))
+                                 linestyle="--", label="No-fly zone (space-time)"))
         ax.legend(handles=handles, loc="upper left", fontsize=5.5, framealpha=0.95,
                   handletextpad=0.4, borderpad=0.3, labelspacing=0.25,
                   handlelength=1.6)

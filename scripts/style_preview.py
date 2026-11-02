@@ -58,14 +58,14 @@ def mock_single(ax, *, dashed: bool, title: str) -> None:
 
 def swatches(ax) -> None:
     ax.set_axis_off()
-    ax.set_title("论文配色（从 PDF 图中提取）", loc="left")
+    ax.set_title("Paper palette (extracted from the PDF)", loc="left")
     labels = [f"{h}  #{h.lstrip('#')}" for h in style.PALETTE]
     for i, (c, lab) in enumerate(zip(style.PALETTE, labels)):
         y = 0.86 - i * 0.17
         ax.add_patch(Rectangle((0.02, y), 0.12, 0.11, transform=ax.transAxes,
                                facecolor=c, edgecolor="#CCCCCC", linewidth=0.6))
         ax.text(0.18, y + 0.045, lab, transform=ax.transAxes, va="center", fontsize=8)
-    ax.text(0.02, 0.02, "橙 #EF8B4C 为单曲线图专用（Fig.11）", transform=ax.transAxes,
+    ax.text(0.02, 0.02, "Orange #EF8B4C: single-curve panels (Fig.11)", transform=ax.transAxes,
             fontsize=7, color="#666666")
 
 
@@ -81,7 +81,7 @@ def main() -> None:
     mock_single(ax1, dashed=False, title="Case 1 - Radius")
     ax2 = fig.add_subplot(gs[0, 2])
     swatches(ax2)
-    fig.suptitle("画风示意（数据为编造，仅用于核对线型/标记/图例）", fontsize=10)
+    fig.suptitle("Style preview (mock data, for line/marker/legend check only)", fontsize=10)
     out = OUT_DIR / "style_preview.png"
     fig.savefig(out, dpi=200, bbox_inches="tight")
     plt.close(fig)

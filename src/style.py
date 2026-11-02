@@ -18,7 +18,7 @@
 
 ## 画风（从图里量出来的）
 
-- 白底、**无网格**（Fig.9/10/11 都没有网格；Fig.11 有极浅的网格，接近看不见）
+- 白底 + 浅灰网格（Fig.11 里有极浅的网格；本项目按需求默认全开）
 - 四边都有黑色细脊线（box），刻度朝外、很短
 - 线条细（≈1.2 pt），标记是**小方块**（`s`），边长 ≈4 pt
 - 图例带细边框、字号小、标题行在框内（Fig.9 的 "Scaling Factor"）
@@ -53,7 +53,7 @@ NFZ_EDGE = "#D98C8C"
 CUSTOMER = "#5B7A99"      # 客户点：低饱和蓝灰，不与路线抢视觉
 DEPOT = "#2C2C2A"         # 仓库：近黑
 
-GRID = "#E8E8E8"          # Fig.11 那种"几乎看不见"的网格
+GRID = "#E3E3E3"          # 浅灰网格（比曲线浅两个档次）
 
 # 论文图里用的是衬线体（Times 那一路）。matplotlib ≥3.6 支持字体回退列表，
 # 所以拉丁字符走 Times New Roman、中文自动回退。
@@ -66,8 +66,8 @@ _FONT_SANS = ["Microsoft YaHei", "SimHei", "DejaVu Sans"]
 SERIF = True          # 想换成无衬线体改这里
 
 
-def apply(font_size: float = 9.0, grid: bool = False) -> None:
-    """套用论文画风。`grid=True` 只给 Fig.11 那种小图用。"""
+def apply(font_size: float = 9.0, grid: bool = True) -> None:
+    """套用论文画风。网格默认全开（浅灰实线，不抢曲线）。"""
     matplotlib.use("Agg", force=False)
     plt.rcParams.update({
         "font.serif": _FONT_SERIF,
@@ -100,8 +100,9 @@ def apply(font_size: float = 9.0, grid: bool = False) -> None:
         "lines.markeredgewidth": 0.6,
         "axes.grid": grid,
         "grid.color": GRID,
-        "grid.linewidth": 0.6,
+        "grid.linewidth": 0.55,
         "grid.linestyle": "-",
+        "axes.axisbelow": True,       # 网格压在曲线下面
         "legend.frameon": True,
         "legend.edgecolor": "#CCCCCC",
         "legend.framealpha": 1.0,
