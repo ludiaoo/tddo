@@ -23,7 +23,7 @@ from src.evaluator import evaluate
 from src.generator import build_instance
 from src.io import PROJECT_ROOT, load_config, load_sets
 from src.solution import solution_from_dict, solution_to_dict
-from src.visualizer import plot_solution
+from src.visualizer import plot_solution, solution_legend_handles
 
 CACHE = PROJECT_ROOT / "results" / "solutions"
 FIG_DIR = PROJECT_ROOT / "results" / "figs"
@@ -87,7 +87,7 @@ def main() -> None:
         inst = build_instance(by_id[sid], cfg)
         sol, cost, cached = get_solution(inst, refresh=args.refresh)
         plot_solution(
-            inst, sol, ax=ax,
+            inst, sol, ax=ax, legend=False,
             title=f"Set{sid} · {inst.n_customers} customers · K={inst.n_trucks} · cost {cost:.1f}",
         )
         tag = "缓存" if cached else "新解"
@@ -96,12 +96,15 @@ def main() -> None:
     for ax in axes[n:]:
         ax.set_axis_off()
 
-    fig.suptitle("ALNS solutions: truck routes (solid, one color per truck) + drone sorties (dashed) + no-fly zones",
+    fig.suptitle("ALNS solutions: truck routes (solid, one color per truck) + drone sorties (dashed)",
                  fontsize=11)
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.legend(handles=solution_legend_handles(inst), loc="lower center",
+               ncol=6, fontsize=8, frameon=False,
+               bbox_to_anchor=(0.5, -0.005))
+    fig.tight_layout(rect=(0, 0.045, 1, 0.97))
     out = FIG_DIR / ("routes_all.png" if args.all else "routes_fig8.png")
     out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=170)
+    fig.savefig(out, dpi=170, bbox_inches="tight")
     plt.close(fig)
     print(f"\n已写出 {out.relative_to(PROJECT_ROOT)}")
 

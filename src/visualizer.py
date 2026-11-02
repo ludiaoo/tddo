@@ -89,19 +89,44 @@ def plot_network(inst: Instance, ax=None, title: str | None = None, legend: bool
                linewidths=0.4, alpha=0.9, zorder=3, label="Customers (size ∝ √demand)")
 
     # 仓库
-    ax.scatter(*xy[0], s=110, marker="s", c=style.DEPOT, edgecolors="white",
-               linewidths=0.8, zorder=4, label="Depot")
+    ax.scatter(*xy[0], s=60, marker="D", c=style.DEPOT, edgecolors="white",
+               linewidths=0.7, zorder=4, label="Depot")
 
     if legend:
         nfz_proxy = Patch(facecolor=style.NFZ_FILL, alpha=0.45, edgecolor=style.NFZ_EDGE,
                           linewidth=0.9, linestyle="--", label="No-fly zone (space-time)")
         handles, labels = ax.get_legend_handles_labels()
         ax.legend(handles + [nfz_proxy], labels + ["No-fly zone (space-time)"],
-                  loc="upper left", fontsize=6, framealpha=0.85,
-                  handletextpad=0.4, borderpad=0.3, labelspacing=0.3)
+                  loc="upper left", fontsize=5.5, framealpha=0.9,
+                  handletextpad=0.4, borderpad=0.3, labelspacing=0.25,
+                  handlelength=1.4)
 
     _setup_axes(inst, ax, title)
     return ax
+
+
+def solution_legend_handles(inst: Instance) -> list:
+    """路线图的**通用**图例（不按卡车逐条列，卡车颜色看图即可）。"""
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+
+    handles = [
+        Line2D([], [], color="#555555", linewidth=1.3, label="Truck route (solid)"),
+        Line2D([], [], color="#555555", linewidth=0.9, linestyle=(0, (3, 2)),
+               label="Drone sortie (dashed)"),
+        Line2D([], [], color=style.CUSTOMER, marker="o", linestyle="none",
+               markersize=4.5, label="Truck-served customer"),
+        Line2D([], [], color="#555555", marker="o", markerfacecolor="white",
+               markeredgecolor="#555555", markeredgewidth=0.8, linestyle="none",
+               markersize=4.5, label="Drone-served customer"),
+        Line2D([], [], color=style.DEPOT, marker="D", linestyle="none",
+               markersize=5.5, label="Depot"),
+    ]
+    if inst.nfz:
+        handles.append(Patch(facecolor=style.NFZ_FILL, alpha=0.4,
+                             edgecolor=style.NFZ_EDGE, linewidth=0.8,
+                             linestyle="--", label="No-fly zone (space-time)"))
+    return handles
 
 
 def plot_solution(
@@ -109,13 +134,17 @@ def plot_solution(
     sol: "Solution",
     ax=None,
     title: str | None = None,
-    legend: bool = True,
+    legend: bool = False,
 ) -> None:
     """画完整解：卡车实线 + 无人机虚线 + 仓库 + 禁飞区（论文 Fig.8 的画法）。
 
     - 每辆卡车一色（`style.ROUTES`），卡车路径是实线；
     - 该车无人机的每个架次用**同色虚线**：起飞点 → 客户序列 → 回收点；
-    - 无人机服务的客户画小圆点，和卡车直服的点区分开（更小、更浅）。
+    - 无人机服务的客户画空心小圆，和卡车直服的实心点区分开；
+    - 仓库用小菱形（大黑方块太抢眼，也容易压住路线）。
+
+    图例默认**不画在面板里**（会挡路线）：多面板脚本用
+    `solution_legend_handles()` + `fig.legend()` 在图外放一条共享图例。
     """
     from .solution import DEPOT, Solution  # noqa: F401  避免循环导入
 
@@ -143,7 +172,7 @@ def plot_solution(
                     alpha=0.95, zorder=3)
             cx = [inst.base.nodes[n].x / 1000.0 for n in s.customers]
             cy = [inst.base.nodes[n].y / 1000.0 for n in s.customers]
-            ax.scatter(cx, cy, s=8, facecolor="white", edgecolor=c, linewidths=0.7,
+            ax.scatter(cx, cy, s=9, facecolor="white", edgecolor=c, linewidths=0.7,
                        zorder=4)
 
     # 客户（卡车直服）：比无人机服务的点更小
@@ -151,54 +180,50 @@ def plot_solution(
     truck_served = {n for r in sol.routes for n in r.nodes if n != DEPOT}
     if truck_served:
         idx = sorted(truck_served)
-        ax.scatter(xy[idx, 0], xy[idx, 1], s=10, c=style.CUSTOMER, edgecolors="white",
+        ax.scatter(xy[idx, 0], xy[idx, 1], s=13, c=style.CUSTOMER, edgecolors="white",
                    linewidths=0.4, zorder=5, label="Truck-served customers")
-    ax.scatter(*xy[0], s=70, marker="s", c=style.DEPOT, edgecolors="white",
+    ax.scatter(*xy[0], s=42, marker="D", c=style.DEPOT, edgecolors="white",
                linewidths=0.7, zorder=6, label="Depot")
 
     if legend:
-        from matplotlib.lines import Line2D
-        from matplotlib.patches import Patch
-
-        handles: list = []
-        n_shown = 0
-        for r in sol.routes:
-            if len(r.nodes) <= 2 and not r.sorties:
-                continue
-            if n_shown >= 10:
-                handles.append(Line2D([], [], color="none", label="…"))
-                break
-            handles.append(Line2D([], [], color=style.route_color(r.truck), linewidth=1.2,
-                                  label=f"Truck {r.truck}"))
-            n_shown += 1
-        handles.append(Line2D([], [], color="#888888", linewidth=0.9,
-                              linestyle=(0, (3, 2)), label="Drone sorties"))
-        handles.append(Line2D([], [], color=style.CUSTOMER, marker="o", linestyle="none",
-                              markersize=3.5, label="Truck-served customers"))
-        handles.append(Line2D([], [], color=style.DEPOT, marker="s", linestyle="none",
-                              markersize=5, label="Depot"))
-        if inst.nfz:
-            handles.append(Patch(facecolor=style.NFZ_FILL, alpha=0.45,
-                                 edgecolor=style.NFZ_EDGE, linewidth=0.9,
-                                 linestyle="--", label="No-fly zone (space-time)"))
-        ax.legend(handles=handles, loc="upper left", fontsize=5.5, framealpha=0.95,
-                  handletextpad=0.4, borderpad=0.3, labelspacing=0.25,
-                  handlelength=1.6)
+        ax.legend(handles=solution_legend_handles(inst), loc="upper left", fontsize=6,
+                  framealpha=0.95, handletextpad=0.4, borderpad=0.35,
+                  labelspacing=0.3, handlelength=1.8)
 
     _setup_axes(inst, ax, title)
 
 
 def plot_all(instances: list[Instance], path: Path) -> Path:
-    """4×4 总览图。"""
-    fig, axes = plt.subplots(4, 4, figsize=(13, 13))
+    """4×4 总览图：面板不带图例，底部一条共享图例。"""
+    fig, axes = plt.subplots(4, 4, figsize=(13, 13.6))
     for ax, inst in zip(axes.ravel(), instances):
-        plot_network(inst, ax=ax)
-    fig.suptitle("16 个复现算例：节点分布与时空禁飞区", fontsize=12)
-    fig.tight_layout(rect=(0, 0, 1, 0.98))
+        plot_network(inst, ax=ax, legend=False)
+    fig.suptitle("16 instances: customers, depot and space-time no-fly zones", fontsize=12)
+    handles = _network_legend_handles(instances[0])
+    fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=8,
+               frameon=False, bbox_to_anchor=(0.5, 0.005))
+    fig.tight_layout(rect=(0, 0.035, 1, 0.98))
     path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(path, dpi=150)
     plt.close(fig)
     return path
+
+
+def _network_legend_handles(inst: Instance) -> list:
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+
+    handles = [
+        Line2D([], [], color=style.CUSTOMER, marker="o", linestyle="none",
+               markersize=4.5, label="Customers (size ∝ √demand)"),
+        Line2D([], [], color=style.DEPOT, marker="D", linestyle="none",
+               markersize=5.5, label="Depot"),
+    ]
+    if inst.nfz:
+        handles.append(Patch(facecolor=style.NFZ_FILL, alpha=0.4,
+                             edgecolor=style.NFZ_EDGE, linewidth=0.8,
+                             linestyle="--", label="No-fly zone (space-time)"))
+    return handles
 
 
 def main() -> None:
