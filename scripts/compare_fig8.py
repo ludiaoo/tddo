@@ -22,7 +22,7 @@ from PIL import Image
 from src.generator import build_instance
 from src.io import PROJECT_ROOT, load_config, load_sets
 from scripts.plot_routes import get_solution
-from src.visualizer import plot_solution, solution_legend_handles
+from src.visualizer import generic_route_legend_handles, plot_solution
 
 PDF = PROJECT_ROOT / "Zeng 等 - 2026 - Optimizing bidirectional delivery with multiple drones and trucks a mixed-integer nonlinear model t.pdf"
 PAGE_PNG = PROJECT_ROOT / ".tmp" / "hi20-20.png"
@@ -84,8 +84,8 @@ def main() -> None:
 
     fig.text(0.02, 0.955, "Paper Fig.8 (with routes)", fontsize=10)
     fig.text(0.02, 0.475, "This project: ALNS solutions (same palette & style)", fontsize=10)
-    fig.legend(handles=solution_legend_handles(inst), loc="lower center",
-               ncol=6, fontsize=8, frameon=False, bbox_to_anchor=(0.5, -0.005))
+    fig.legend(handles=generic_route_legend_handles(inst), loc="lower center",
+               ncol=5, fontsize=8, frameon=False, bbox_to_anchor=(0.5, -0.005))
     fig.suptitle("Instance comparison: paper Fig.8 vs. this project", fontsize=13, y=0.995)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)

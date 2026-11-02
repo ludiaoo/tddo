@@ -100,7 +100,12 @@ Without-detour 是「收紧」不是「放开」——论文 Table 3 该列 Incr
 |---|---|---|
 | 灵敏度曲线（Fig.9/10/11） | `style.PALETTE` 5 色柔和系 | 青 `#7FC3C3`、薰衣草 `#BCBCDA`、橙 `#EF8B4C`、浅蓝 `#82AAD2`、浅绿 `#93BC80` |
 | 路线图（Fig.8，十几条线） | `style.ROUTES`（tab10） | 浅色分不开十几条路线 |
-| 禁飞区 / 客户 / 仓库 | `NFZ_FILL` `CUSTOMER` `DEPOT` | 粉色虚线圈、灰蓝点、近黑方块 |
+| 禁飞区 / 节点 / 仓库 | `NFZ_FILL` `CUSTOMER` `DEPOT` | 鲑鱼粉实心圆、近黑小点、黑色小菱形 |
+
+图例按论文 Fig.8 的组织方式：**每辆车两行**（实线 `Truck k` + 同色虚线 `Drone k`），
+外加 `Nodes` / `Depot` / `No-Fly Zone`。图例挂在坐标区**右侧框外**（论文是塞在面板左上角，
+路线会从图例底下穿过），保证不遮挡任何数据。多面板且车队规模不同时用
+`generic_route_legend_handles()` 的通用一套（图底部一行）。
 
 ```python
 from src import style

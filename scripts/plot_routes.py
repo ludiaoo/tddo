@@ -23,7 +23,7 @@ from src.evaluator import evaluate
 from src.generator import build_instance
 from src.io import PROJECT_ROOT, load_config, load_sets
 from src.solution import solution_from_dict, solution_to_dict
-from src.visualizer import plot_solution, solution_legend_handles
+from src.visualizer import attach_legend, plot_solution, solution_legend_handles
 
 CACHE = PROJECT_ROOT / "results" / "solutions"
 FIG_DIR = PROJECT_ROOT / "results" / "figs"
@@ -77,10 +77,10 @@ def main() -> None:
     by_id = {s["id"]: s for s in load_sets()}
     ids = sorted(by_id) if args.all else REPRESENTATIVE
 
-    cols = 4 if not args.all else 4
+    cols = 2                       # 论文 Fig.8 就是 2×2，图例挂在每个面板右侧
     n = len(ids)
     rows = (n + cols - 1) // cols
-    fig, axes = plt.subplots(rows, cols, figsize=(4.2 * cols, 4.4 * rows))
+    fig, axes = plt.subplots(rows, cols, figsize=(5.0 * cols, 4.4 * rows))
     axes = list(axes.ravel()) if hasattr(axes, "ravel") else [axes]
 
     for ax, sid in zip(axes, ids):
@@ -88,20 +88,17 @@ def main() -> None:
         sol, cost, cached = get_solution(inst, refresh=args.refresh)
         plot_solution(
             inst, sol, ax=ax, legend=False,
-            title=f"Set{sid} · {inst.n_customers} customers · K={inst.n_trucks} · cost {cost:.1f}",
+            title=f"Set{sid}: {inst.n_customers} customers, K={inst.n_trucks}, cost {cost:.1f}",
         )
+        attach_legend(ax, inst, sol, font_size=5.5)      # Fig.8 式图例，挂在右侧框外
         tag = "缓存" if cached else "新解"
         print(f"Set{sid:2d} n={inst.n_customers:3d} 成本 {cost:9.2f}  [{tag}]")
 
     for ax in axes[n:]:
         ax.set_axis_off()
 
-    fig.suptitle("ALNS solutions: truck routes (solid, one color per truck) + drone sorties (dashed)",
-                 fontsize=11)
-    fig.legend(handles=solution_legend_handles(inst), loc="lower center",
-               ncol=6, fontsize=8, frameon=False,
-               bbox_to_anchor=(0.5, -0.005))
-    fig.tight_layout(rect=(0, 0.045, 1, 0.97))
+    fig.suptitle("Truck & Drone Routes (ALNS solutions)", fontsize=12)
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     out = FIG_DIR / ("routes_all.png" if args.all else "routes_fig8.png")
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, dpi=170, bbox_inches="tight")
