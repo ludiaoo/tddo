@@ -56,6 +56,7 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 - `M0_论文要点笔记.md`：复现对象的问题、符号、约束地图、算法与参数
 - `M6_对标结果.md`：Table 3 三列对照 + Gurobi 小规模验证 + 口径差异说明
 - `M7_灵敏度分析.md`：Fig.9–12 复刻结果、与论文的三处差异、以及「多种子取均值」的方法说明
+- `M8_复现评估与改进方向.md`：对齐/未对齐清单（按可修性分三类）、性能剖析与优化优先级、六个 ML/LLM 方向的取舍
 - `results/figs/routes_fig8.png`：四个代表算例的求解路线（卡车实线、无人机虚线、禁飞区粉圈）
 - `results/figs/compare_with_paper.png`：与论文 Fig.8 同版式对照（含 Elsevier 原图，不入库）
 - `约束逐条翻译_2-79.md`：79 条约束逐条公式 + 直译 + 为什么需要 + 启发式如何处理
