@@ -57,6 +57,7 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 - `M6_对标结果.md`：Table 3 三列对照 + Gurobi 小规模验证 + 口径差异说明
 - `M7_灵敏度分析.md`：Fig.9–12 复刻结果、与论文的三处差异、以及「多种子取均值」的方法说明
 - `M8_复现评估与改进方向.md`：对齐/未对齐清单（按可修性分三类）、性能剖析与优化优先级、六个 ML/LLM 方向的取舍
+- `M8_执行记录_提速与论文协议.md`：4.6× 提速（结果逐位不变）、2000 轮 × 10 种子结果、四行消融
 - `results/figs/routes_fig8.png`：四个代表算例的求解路线（卡车实线、无人机虚线、禁飞区粉圈）
 - `results/figs/compare_with_paper.png`：与论文 Fig.8 同版式对照（含 Elsevier 原图，不入库）
 - `约束逐条翻译_2-79.md`：79 条约束逐条公式 + 直译 + 为什么需要 + 启发式如何处理
@@ -78,8 +79,12 @@ pip install -r requirements-dev.txt
 python -m pytest -q           # 183 项（默认跳过需要 Gurobi 的 4 项）
 python -m pytest -q -m slow   # 4 项 MILP 测试：与评估器逐项对账 + 不劣于 ALNS
 python -m scripts.check_geometry   # 几何诊断：绕行率、禁飞阻断率
-python -m scripts.run_alns         # 16 算例 × 三列（ALNS / Truck-only / Without-detour）→ results/table3_like.csv
-python -m scripts.run_pso          # 在同一批解上补 PSO 列 → results/table3_with_pso.csv
+python -m scripts.bench --exp main --seeds 10 --iters 2000   # 论文协议，10 进程并行（约 18 min）
+python -m scripts.bench --exp ablate --seeds 5 --iters 2000 --no-tune   # 消融：论文原参数
+python -m scripts.summarize_bench  # 汇总成 results/table3_v2.csv + 四行消融
+python -m scripts.golden_check     # 回归：同种子必须逐位复现 baseline（性能改动守门）
+python -m scripts.run_alns         # 旧版：16 算例 × 三列（150–300 轮 × 2 种子）
+python -m scripts.run_pso          # 旧版：在同一批解上补 PSO 列 → results/table3_with_pso.csv
 python -m scripts.run_milp         # 4 个 10 客户算例的 MILP 最优 → results/milp_check.csv
 python -m scripts.style_preview    # 配色核对：色板 + 论文原图并排
 python -m scripts.sensitivity      # M7 灵敏度（Fig.9–12），约 20–45 min，逐点落盘可续跑
@@ -155,6 +160,7 @@ results/      结果 CSV 与图
 - [x] M5 改进算法：ALNS 主循环
 - [x] M6 实验与结果对标（Gurobi 小规模验证 + Truck-only + Without-detour + PSO）
 - [x] M7 灵敏度分析与可视化（Fig.9–12；半径效应需限定在「时段覆盖作业期」下才显效）
+- [x] M8 评估 · 提速 · 论文协议（2000 轮 × 10 种子，Saving 均值 51.4%，100 客户 CPU 148–240 s）
 - [ ] M8 整理与交付
 
 ## 许可与致谢

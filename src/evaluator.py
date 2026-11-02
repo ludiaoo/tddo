@@ -18,7 +18,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .distance import drone_leg, service_ok, truck_leg
+from .cache import GeometryCache
+from .distance import truck_leg
 from .energy import driver_cost, drone_energy, truck_cost
 from .instance import Instance
 from .solution import DEPOT, Route, Solution
@@ -71,10 +72,16 @@ class EvalResult:
         return out
 
 
-def _simulate_route(inst: Instance, route: Route) -> RouteEval:
-    """沿卡车路径推进，同时推进无人机架次。"""
+def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEval:
+    """沿卡车路径推进，同时推进无人机架次。
+
+    `fast=True` 供算子内部筛候选用：一旦发现违约立刻返回（`feasible=False`），
+    不再模拟剩余节点。调用方只在 `feasible` 为真时读 `cost`，所以早退不改变任何决策，
+    但能把「明显不可行」的候选从 O(路径全长) 降到 O(违约位置)。
+    """
     p = inst.params
     base = inst.base
+    g = GeometryCache.of(inst)
     ev = RouteEval(truck=route.truck)
     nodes = route.nodes
 
@@ -83,11 +90,14 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
 
     # 卡车初始装载：本路线（含无人机）服务的所有客户的派件量
     served = route.served_customers()
-    F = float(sum(inst.f[c] for c in served))
+    f_list, g_list = g.f_list, g.g_list
+    F = float(sum(map(f_list.__getitem__, served)))
     G = 0.0
     if F > p.truck_capacity + 1e-9:
         ev.violations.append(f"{V_CAP_TRUCK} 出车装载 {F:.1f}kg > {p.truck_capacity:.1f}kg")
         ev.feasible = False
+        if fast:
+            return ev
 
     t = 0.0                      # 到达当前节点的时刻
     drone_arrival: dict[int, float] = {}   # 各架次的无人机抵达回收点时刻
@@ -98,8 +108,8 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
         # --- 在 i 点：卡车服务（若 i 是客户且由卡车服务） ---
         if i != DEPOT:
             t += p.service_time
-            F -= inst.f[i]
-            G += inst.g[i]
+            F -= f_list[i]
+            G += g_list[i]
 
         # --- 在 i 点：起飞无人机 ---
         s = launch_at.get(pos)
@@ -113,24 +123,30 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
                 # 模型内部就不自洽。这里直接判不可行，与模型口径保持一致。
                 ev.violations.append(f"{V_LR_SAME} 位置{pos} 同时是回收点与起飞点")
                 ev.feasible = False
+                if fast:
+                    return ev
             if busy_until is not None and pos < busy_until:
                 ev.violations.append(
                     f"{V_DRONE_BUSY} 位置{pos} 起飞时，上一架次（回收位置 {busy_until}）仍在飞行"
                 )
                 ev.feasible = False
+                if fast:
+                    return ev
             busy_until = s.recover
             t += p.launch_time
-            t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev)
+            t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev, g=g, fast=fast)
             if ok:
                 drone_arrival[s.recover] = t_d
                 ev.drone_energy += energy
             # 无人机带走它负责的派件，卡车账上直接扣掉（约束 56/57）
-            F -= float(sum(inst.f[c] for c in s.customers))
+            F -= float(sum(map(f_list.__getitem__, s.customers)))
             ev.n_sorties += 1
+            if fast and not ev.feasible:
+                return ev
 
         # --- 前往下一节点 ---
         j = nodes[pos + 1]
-        d_truck, t_truck_leg = truck_leg(base, i, j)
+        d_truck, t_truck_leg = g.truck_d[i][j], g.truck_t[i][j]
         ev.truck_distance += d_truck
         t_no_wait = t + t_truck_leg
 
@@ -141,12 +157,14 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
         t = t_no_wait
         r = recover_at.get(pos + 1)
         if j != DEPOT:
-            w = inst.tw[j - 1]
-            if t_no_wait > w.l + 1e-6:
+            wl = g.tw_l[j - 1]
+            if t_no_wait > wl + 1e-6:
                 ev.violations.append(
-                    f"{V_TW_TRUCK} 节点{j} 到达 {t_no_wait/60:.1f}min 晚于窗口上界 {w.l/60:.1f}min"
+                    f"{V_TW_TRUCK} 节点{j} 到达 {t_no_wait/60:.1f}min 晚于窗口上界 {wl/60:.1f}min"
                 )
                 ev.feasible = False
+                if fast:
+                    return ev
 
         # --- 回收无人机：卡车必须等无人机到达 ---
         if r is not None:
@@ -156,48 +174,57 @@ def _simulate_route(inst: Instance, route: Route) -> RouteEval:
                 ev.waiting_time += ta - t
                 t = ta
             t += p.recovery_time
-            G += float(sum(inst.g[c] for c in r.customers))
+            G += float(sum(map(g_list.__getitem__, r.customers)))
 
         # 早到等待到窗口开启
         if j != DEPOT:
-            w = inst.tw[j - 1]
-            if t < w.e:
-                ev.waiting_time += w.e - t
-                t = w.e
+            we = g.tw_e[j - 1]
+            if t < we:
+                ev.waiting_time += we - t
+                t = we
 
         # 卡车容量：派件 + 取件（约束 62）
         if F + G > p.truck_capacity + 1e-9:
             ev.violations.append(f"{V_CAP_TRUCK} 节点{j} 装载 {F+G:.1f}kg > {p.truck_capacity:.1f}kg")
             ev.feasible = False
+            if fast:
+                return ev
         if F < -1e-6:
             ev.violations.append(f"{V_CAP_TRUCK} 节点{j} 派件量为负（{F:.2f}），说明装载或交接算错")
             ev.feasible = False
+            if fast:
+                return ev
 
     ev.finish_time = t
     return ev
 
 
 def _fly_sortie(
-    inst: Instance, route: Route, s, start_node: int, t_start: float, ev: RouteEval
+    inst: Instance, route: Route, s, start_node: int, t_start: float, ev: RouteEval,
+    g: GeometryCache, fast: bool = False,
 ) -> tuple[float, float, bool]:
     """模拟一个架次：起飞点 → 客户序列 → 回收点。返回（抵达回收点时刻, 能耗, 是否可行）。"""
     p = inst.params
-    base = inst.base
     ok = True
 
-    # 起飞点的起降可行性（Fig.3 的 γ·δ）
-    node_xy = (base.nodes[start_node].x, base.nodes[start_node].y)
-    can, blocked = service_ok(node_xy, t_start, inst.nfz)
+    # 起飞点的起降可行性（Fig.3 的 γ·δ）。缓存里已按节点预筛过相关禁飞区，
+    # 不再遍历全部圆（原实现每次 $O(|H|)$，是 83 万次调用里最贵的一段）。
+    can, blocked = g.service_ok(start_node, t_start)
     if not can:
         ev.violations.append(f"{V_NFZ} 起飞点{start_node} 在禁飞期内位于区内 {blocked}")
         ev.feasible = False
+        if fast:
+            return t_start, 0.0, False
         ok = False
 
-    payload_f = float(sum(inst.f[c] for c in s.customers))
+    f_list, g_list = g.f_list, g.g_list
+    payload_f = float(sum(map(f_list.__getitem__, s.customers)))
     payload_g = 0.0
     if payload_f > p.drone_capacity + 1e-9:
         ev.violations.append(f"{V_CAP_DRONE} 起飞载荷 {payload_f:.2f}kg > {p.drone_capacity:.2f}kg")
         ev.feasible = False
+        if fast:
+            return t_start, 0.0, False
 
     t = t_start
     energy = 0.0
@@ -205,13 +232,12 @@ def _fly_sortie(
     seq = list(s.customers) + [route.nodes[s.recover]]
 
     for k, nxt in enumerate(seq):
-        est = t + _straight(inst, cur, nxt) / p.drone_speed
-        leg = drone_leg(base, inst.nfz, cur, nxt, t, est, allow_detour=inst.allow_detour)
+        est = t + g.straight(cur, nxt) / p.drone_speed
+        leg = g.leg(cur, nxt, t, est, allow_detour=inst.allow_detour)
         if not leg.feasible:
             ev.violations.append(f"{V_NFZ} 航段 {cur}->{nxt} 不可飞（{leg.blocked_by}）")
             ev.feasible = False
-            ok = False
-            return t, energy, ok
+            return t, energy, False
 
         onboard = payload_f + payload_g
         energy += drone_energy(leg.distance, onboard, p)
@@ -221,22 +247,27 @@ def _fly_sortie(
 
         if k < len(seq) - 1:          # 到达客户
             c = nxt
-            w = inst.tw[c - 1]
-            if t > w.l + 1e-6:
+            wl = g.tw_l[c - 1]
+            if t > wl + 1e-6:
                 ev.violations.append(
-                    f"{V_TW_DRONE} 无人机到节点{c} {t/60:.1f}min 晚于窗口上界 {w.l/60:.1f}min"
+                    f"{V_TW_DRONE} 无人机到节点{c} {t/60:.1f}min 晚于窗口上界 {wl/60:.1f}min"
                 )
                 ev.feasible = False
-            if t < w.e:                 # 早到则悬停等待（不计能耗，见该节注释）
-                ev.waiting_time += w.e - t
-                t = w.e
-            payload_f -= inst.f[c]
-            payload_g += inst.g[c]
+                if fast:
+                    return t, energy, ok
+            we = g.tw_e[c - 1]
+            if t < we:                  # 早到则悬停等待（不计能耗，见该节注释）
+                ev.waiting_time += we - t
+                t = we
+            payload_f -= f_list[c]
+            payload_g += g_list[c]
             if payload_f + payload_g > p.drone_capacity + 1e-9:
                 ev.violations.append(
                     f"{V_CAP_DRONE} 节点{c} 机上 {payload_f+payload_g:.2f}kg > {p.drone_capacity:.2f}kg"
                 )
                 ev.feasible = False
+                if fast:
+                    return t, energy, ok
             t += p.service_time
 
     if energy > p.eta_soc * p.drone_battery + 1e-9:
@@ -244,6 +275,8 @@ def _fly_sortie(
             f"{V_SOC} 架次能耗 {energy:.3f}kWh > {p.eta_soc * p.drone_battery:.3f}kWh"
         )
         ev.feasible = False
+        if fast:
+            return t, energy, ok
 
     if abs(payload_f) > 1e-6:
         ev.violations.append(f"{V_CAP_DRONE} 回收时仍有派件 {payload_f:.2f}kg（约束 67）")
@@ -258,7 +291,7 @@ def _straight(inst: Instance, i: int, j: int) -> float:
 
 
 def evaluate(
-    inst: Instance, sol: Solution, check_structure: bool = True
+    inst: Instance, sol: Solution, check_structure: bool = True, fast: bool = False
 ) -> tuple[EvalResult, float]:
     """返回（逐路线结果, 总成本）。总成本 = Σ 无人机电费 + 卡车油费 + 司机工时。
 
@@ -267,7 +300,7 @@ def evaluate(
     """
     from .solution import validate_structure
 
-    evs = [_simulate_route(inst, r) for r in sol.routes]
+    evs = [_simulate_route(inst, r, fast=fast) for r in sol.routes]
     errs = validate_structure(sol, inst) if check_structure else []
     res = EvalResult(routes=evs, structure_errors=errs)
     total = sum(r.cost(inst) for r in evs)

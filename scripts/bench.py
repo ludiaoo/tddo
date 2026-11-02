@@ -1,0 +1,149 @@
+"""并行跑 ALNS 实验（多进程）。
+
+单机 20 核、单次求解 1–3 分钟，160 次运行串行要几小时；ALNS 的「算例 × 种子」之间
+完全独立，是这个场景里最典型的易并行结构。
+
+用法：
+    python -m scripts.bench --exp main   --seeds 10 --iters 2000   # 新参数（默认）
+    python -m scripts.bench --exp ablate --seeds 10 --iters 2000 --no-tune   # 论文原参数
+    python -m scripts.bench --exp main --seeds 3 --sets 5,9,13     # 快速子集
+
+结果逐行追加到 `results/bench_<exp>.csv`，中断可续（按 set+seed+tune+iters 去重）。
+"""
+
+from __future__ import annotations
+
+import argparse
+import csv
+import os
+import time
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+from src.io import PROJECT_ROOT, load_config, load_sets
+
+_CFG = None
+_SETS = None
+
+
+def _init() -> None:
+    """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
+    global _CFG, _SETS
+    _CFG = load_config()
+    _SETS = {s["id"]: s for s in load_sets()}
+
+
+def _run(task: tuple) -> dict:
+    from src.alns import solve
+    from src.generator import build_instance
+
+    sid, seed, iters, tune, use_drone, use_detour = task
+    t0 = time.time()
+    inst = build_instance(_SETS[sid], _CFG)
+    r = solve(
+        inst, seed=seed, iters=iters, tune=tune,
+        use_drone=use_drone, use_detour=use_detour,
+    )
+    return {
+        "set": sid,
+        "n_customers": inst.n_customers,
+        "n_trucks": inst.n_trucks,
+        "seed": seed,
+        "iters": iters,
+        "tune": int(tune),
+        "use_drone": int(use_drone),
+        "use_detour": int(use_detour),
+        "initial_cost": round(float(r.initial_cost), 4),
+        "best_cost": round(float(r.best_cost), 4),
+        "saving_pct": round(float(r.saving) * 100, 3),
+        "t0": round(float(r.t0_used), 2),
+        "restarts": int(r.restarts),
+        "cpu_s": round(time.time() - t0, 2),
+    }
+
+
+FIELDS = [
+    "set", "n_customers", "n_trucks", "seed", "iters", "tune",
+    "use_drone", "use_detour", "initial_cost", "best_cost",
+    "saving_pct", "t0", "restarts", "cpu_s",
+]
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--exp", default="main")
+    ap.add_argument("--seeds", type=int, default=10)
+    ap.add_argument("--iters", type=int, default=2000)
+    ap.add_argument("--sets", default="", help="逗号分隔的 set id，默认全部 16 个")
+    ap.add_argument("--no-tune", action="store_true", help="用论文原参数（消融基线）")
+    ap.add_argument("--no-drone", action="store_true", help="Truck-only 对照")
+    ap.add_argument("--no-detour", action="store_true", help="Without-detour 对照")
+    ap.add_argument("--workers", type=int, default=0)
+    ap.add_argument("--refresh", action="store_true", help="忽略已有 CSV，重跑")
+    args = ap.parse_args()
+
+    tune = not args.no_tune
+    sets = [int(x) for x in args.sets.split(",")] if args.sets else [s["id"] for s in load_sets()]
+    out = PROJECT_ROOT / "results" / f"bench_{args.exp}.csv"
+
+    done: set[tuple] = set()
+    if out.exists() and not args.refresh:
+        with open(out, encoding="utf-8") as fh:
+            for row in csv.DictReader(fh):
+                done.add((int(row["set"]), int(row["seed"]), int(row["iters"]), int(row["tune"])))
+
+    tasks = [
+        (sid, seed, args.iters, tune, not args.no_drone, not args.no_detour)
+        for sid in sets
+        for seed in range(args.seeds)
+    ]
+    todo = [t for t in tasks if (t[0], t[1], t[2], int(t[3])) not in done]
+
+    workers = args.workers or min(max(os.cpu_count() // 2, 2), 10)
+    print(
+        f"实验 {args.exp}：{len(tasks)} 个任务，已完成 {len(tasks) - len(todo)}，"
+        f"待跑 {len(todo)}，{workers} 进程",
+        flush=True,
+    )
+    if not todo:
+        print("没有待跑任务")
+        return
+
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fresh = args.refresh or not out.exists() or out.stat().st_size == 0
+    fh = open(out, "w" if fresh else "a", newline="", encoding="utf-8")
+    writer = None
+    t_all = time.time()
+    n_done = 0
+    try:
+        with ProcessPoolExecutor(max_workers=workers, initializer=_init) as pool:
+            futs = {pool.submit(_run, t): t for t in todo}
+            for fut in as_completed(futs):
+                sid, seed, iters, _tune, _d, _dt = futs[fut]
+                try:
+                    row = fut.result()
+                except Exception as exc:                       # 单个任务失败不拖垮整批
+                    print(f"  Set{sid} seed={seed} 失败：{exc}", flush=True)
+                    continue
+                if writer is None:
+                    writer = csv.DictWriter(fh, fieldnames=FIELDS)
+                    if fresh:
+                        writer.writeheader()
+                writer.writerow(row)
+                fh.flush()
+                n_done += 1
+                eta = (time.time() - t_all) / n_done * (len(todo) - n_done)
+                print(
+                    f"  [{n_done}/{len(todo)}] Set{sid:2d} seed={seed} "
+                    f"cost={row['best_cost']:8.2f} saving={row['saving_pct']:5.1f}% "
+                    f"T0={row['t0']:5.1f} 重启={row['restarts']} "
+                    f"{row['cpu_s']:5.1f}s  ETA {eta/60:.1f}min",
+                    flush=True,
+                )
+    finally:
+        fh.close()
+
+    print(f"\n总耗时 {(time.time()-t_all)/60:.1f} min，已写出 {out.relative_to(PROJECT_ROOT)}")
+
+
+if __name__ == "__main__":
+    main()

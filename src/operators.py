@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from .evaluator import evaluate
+from .evaluator import _simulate_route, evaluate
 from .instance import Instance
 from .solution import DEPOT, Route, Solution, route_from_specs, route_to_specs
 
@@ -31,9 +31,35 @@ class Removal:
 
 # ---------------------------------------------------------------- 基础工具
 
+_MEMO_CAP = 120_000          # 记忆化容量上限，超了清空（宁可再生，也不吃内存）
+
+
 def _route_eval(inst: Instance, route: Route) -> tuple[bool, float]:
-    res, cost = evaluate(inst, Solution([route]), check_structure=False)
-    return res.feasible, cost
+    """单条路线的（可行, 成本）。
+
+    两处优化，都不改变语义：
+    1. 直连 `_simulate_route(..., fast=True)`——不再构造 Solution/EvalResult，
+       也不跑完整性校验（单条路线本来就不该查「客户是否都被服务」）；
+       碰到第一处违约立即返回，不模拟剩余节点。
+    2. **按签名记忆化**：修复算子对「未被改动的那几条路线」会反复求值
+       （truck 候选算一遍、drone 候选又算一遍），这是纯重复计算。
+    """
+    sig = (route.truck, tuple(route.nodes),
+           tuple((s.launch, s.recover, s.customers) for s in route.sorties))
+    memo = getattr(inst, "_route_memo", None)
+    if memo is None:
+        memo = {}
+        inst._route_memo = memo
+    got = memo.get(sig)
+    if got is not None:
+        return got
+
+    ev = _simulate_route(inst, route, fast=True)
+    res = (True, ev.cost(inst)) if ev.feasible else (False, 0.0)
+    if len(memo) >= _MEMO_CAP:
+        memo.clear()
+    memo[sig] = res
+    return res
 
 
 def _clone(sol: Solution) -> Solution:

@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -31,6 +32,9 @@ class ALNSResult:
     weights_destroy: dict[str, float] = field(default_factory=dict)
     weights_repair: dict[str, float] = field(default_factory=dict)
     iterations: int = 0
+    t0_used: float = 300.0        # 实际使用的初温（tune=True 时是按 Δ 分布标定的，不是 300）
+    restarts: int = 0             # 触发了几次「停滞扰动」
+    tune: bool = True             # 是否启用三项参数修正
 
     @property
     def saving(self) -> float:
@@ -76,6 +80,50 @@ def disable_detour(inst: Instance) -> Instance:
     return replace(inst, allow_detour=False)
 
 
+def _calibrate_t0(
+    inst: Instance, sol: Solution, cost: float, rng, samples: int = 40
+) -> float:
+    """按「中位上升步的接受概率 ≈ 50%」标定初温。
+
+    论文的 T0 = 300 是对它自己的成本尺度（13–285 美元）调的。我们的成本是 68–920，
+    直接沿用等于初温**相对成本过大**：`exp(-Δ/300)` 对 Δ=20 也有 0.94，
+    前几十轮基本是随机游走，一半预算被浪费。
+
+    标定式：`exp(-Δ_med / T0) = 0.5  ⇒  T0 = Δ_med / ln2`。
+    Δ 取初始解上若干次随机 destroy+repair 的正增量中位数（只用可行解）。
+    """
+    ups: list[float] = []
+    for _ in range(samples):
+        rem = DESTROY["random"](inst, sol, rng, 0.3)
+        cand = REPAIR["random"](inst, rem, rng)
+        if cand is None:
+            continue
+        res, c = evaluate(inst, cand)
+        if res.feasible and c > cost:
+            ups.append(c - cost)
+    if not ups:
+        return 300.0
+    ups.sort()
+    return max(ups[len(ups) // 2] / math.log(2.0), 1e-3)
+
+
+def _kick(inst: Instance, best: Solution, best_cost: float, rng, frac: float = 0.5):
+    """停滞时的**真扰动**：随机移除一半客户再随机插回。
+
+    原实现停滞时只是 `sol = best`——回到**同一个吸引域**，等于什么都没做，
+    这也是 Set13 在 60 轮就完全停滞的直接原因。真正的多样化必须扰动解本身。
+    扰动后若成本超过最优的 1.3 倍，视为扰动失败，退回最优（防止把预算耗在烂解上）。
+    """
+    rem = DESTROY["random"](inst, best, rng, frac)
+    cand = REPAIR["random"](inst, rem, rng)
+    if cand is None:
+        return best, best_cost
+    res, c = evaluate(inst, cand)
+    if res.feasible and c <= best_cost * 1.3:
+        return cand, c
+    return best, best_cost
+
+
 def solve(
     inst: Instance,
     seed: int = 0,
@@ -88,12 +136,26 @@ def solve(
     alpha: float | None = None,
     ratio: float | None = None,
     max_no_improve: int | None = None,
+    tune: bool = True,
 ) -> ALNSResult:
-    iters = iters or 2000
-    t0 = t0 if t0 is not None else 300.0
-    alpha = alpha if alpha is not None else 0.99
-    ratio = ratio if ratio is not None else 0.30
-    max_no_improve = max_no_improve or 200
+    """ALNS 主循环。
+
+    `tune=False` 复原论文的原始参数（T0=300、破坏率固定 30%、停滞回退到最优），
+    用于消融对照；`tune=True`（默认）启用本项目的三处修正：
+
+    | 项 | 论文 | 本项目 | 为什么 |
+    |---|---|---|---|
+    | 初温 | 固定 300 | 按 Δ 分布标定（中位上升步接受率 50%） | 300 是按论文成本尺度调的，我们的成本量级不同 |
+    | 破坏率 | 固定 30% | 每轮 U(10%, 40%) | 固定值在 100 客户时接近「重建半张图」，单轮代价过高 |
+    | 停滞 | 回退到最优 | **随机移除 50% 再插回** | 回退到最优只是回到同一吸引域，没有跳出机制 |
+    """
+    iters = 2000 if iters is None else iters
+    if alpha is None:
+        # 降温速率必须与预算挂钩。α=0.99 配 2000 轮时，温度在第 1000 轮已降到 0.013，
+        # 后半个预算等于纯爬山——论文的 2000 轮 × α=0.99 本身就有这个尺度问题。
+        # 这里让末温固定落到 T0×1e-3：预算越长，α 越接近 1。
+        alpha = (1e-3) ** (1.0 / iters) if tune else 0.99
+    max_no_improve = 200 if max_no_improve is None else max_no_improve
 
     if not use_nfz:
         inst = disable_nfz(inst)
@@ -101,22 +163,33 @@ def solve(
         inst = disable_drones(inst)
     if not use_detour:
         inst = disable_detour(inst)
+
     rng = np.random.default_rng(seed)
     sol, cur_cost, _ = build_initial(inst)
     res, _ = evaluate(inst, sol)
     if not res.feasible:                      # 初始解不可行就不该进主循环
         raise RuntimeError(f"初始解不可行：{res.all_violations()[:3]}")
 
+    if t0 is None:
+        t0 = _calibrate_t0(inst, sol, cur_cost, rng) if tune else 300.0
+
     best, best_cost, initial_cost = sol, cur_cost, cur_cost
     wd = {k: 1.0 for k in DESTROY}
     wr = {k: 1.0 for k in REPAIR}
     T = t0
     no_improve = 0
+    restarts = 0
     history = [cur_cost]
 
     for it in range(iters):
         dn, rn = _roulette(rng, wd), _roulette(rng, wr)
-        rem = DESTROY[dn](inst, sol, rng, ratio)
+        if ratio is not None:
+            r = ratio
+        elif tune:
+            r = float(rng.uniform(0.10, 0.40))
+        else:
+            r = 0.30
+        rem = DESTROY[dn](inst, sol, rng, r)
         cand = REPAIR[rn](inst, rem, rng)
 
         accepted = False
@@ -131,7 +204,6 @@ def solve(
                     if ccost < best_cost - 1e-9:
                         best, best_cost = cand, ccost
                         status = "best"
-                        no_improve = 0
                     elif delta < 0:
                         status = "improve"
                     else:
@@ -150,14 +222,26 @@ def solve(
         wr[rn] = max(wr[rn], WEIGHT_FLOOR)
 
         T *= alpha
-        if not accepted and status != "best":
+
+        # 停滞计数：以「多久没刷新全局最优」为准（原实现数的是「多少轮没被接受」，
+        # 与论文「连续 200 次无改进」的语义不符）
+        if tune:
+            no_improve = 0 if status == "best" else no_improve + 1
+        elif not accepted and status != "best":
             no_improve += 1
+
         if no_improve >= max_no_improve:
-            sol, cur_cost = best, best_cost      # 停滞回退到最优
+            if tune:
+                sol, cur_cost = _kick(inst, best, best_cost, rng)
+                T = max(T, t0 * 0.2)          # 扰动后给回一点温度，否则新解立刻被冻结
+                restarts += 1
+            else:
+                sol, cur_cost = best, best_cost
             no_improve = 0
         history.append(cur_cost)
 
     return ALNSResult(
         best=best, best_cost=best_cost, initial_cost=initial_cost,
         history=history, weights_destroy=wd, weights_repair=wr, iterations=iters,
+        t0_used=float(t0), restarts=restarts, tune=tune,
     )
