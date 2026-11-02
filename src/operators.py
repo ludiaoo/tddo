@@ -62,6 +62,17 @@ def _route_eval(inst: Instance, route: Route) -> tuple[bool, float]:
     return res
 
 
+def _keeps_all(base: Route, trial: Route, new: int) -> bool:
+    """候选路线是否**既装进了新客户、又没有弄丢原有客户**。
+
+    只查 `new in trial` 是不够的：`route_from_specs` 在锚点位置冲突时会静默丢弃整段架次，
+    可能把**之前**插进去的无人机客户弄丢，而解看起来更便宜——M5 踩过，
+    换禁飞区摆放后又复发（由 test_修复能还原可行解 抓出）。这条检查把整类问题一次堵死。
+    """
+    got = trial.served_customers()
+    return new in got and base.served_customers() <= got
+
+
 def _clone(sol: Solution) -> Solution:
     return Solution([route_from_specs(r.truck, r.nodes, route_to_specs(r)) for r in sol.routes])
 
@@ -244,7 +255,7 @@ def _truck_candidates(inst: Instance, sol: Solution, c: int):
         for _, k in coarse[:TOP_K]:
             nodes = r.nodes[: k + 1] + [c] + r.nodes[k + 1:]
             trial = route_from_specs(r.truck, nodes, specs)
-            if c not in trial.served_customers():      # 架次冲突可能把客户又丢掉
+            if not _keeps_all(r, trial, c):            # 架次冲突可能把客户又丢掉
                 continue
             ok, cost = _route_eval(inst, trial)
             if ok:
@@ -277,7 +288,7 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int):
                 new_cust = cust[:pos] + (c,) + cust[pos:]
                 trial_specs = specs[:i] + [(p, q, new_cust)] + specs[i + 1:]
                 trial = route_from_specs(r.truck, r.nodes, trial_specs)
-                if c not in trial.served_customers():
+                if not _keeps_all(r, trial, c):
                     continue
                 ok, cost = _route_eval(inst, trial)
                 if ok:
@@ -292,7 +303,7 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int):
             if any((sp, sq) == (p, q) for sp, sq, _ in specs):
                 continue
             trial = route_from_specs(r.truck, r.nodes, specs + [(p, q, (c,))])
-            if c not in trial.served_customers():
+            if not _keeps_all(r, trial, c):
                 continue
             ok, cost = _route_eval(inst, trial)
             if ok:
@@ -356,6 +367,12 @@ def repair_truck_first(inst: Instance, rem: Removal, rng) -> Solution | None:
                     continue
                 new_nodes = [n for n in r.nodes if n != c]
                 trial = route_from_specs(r.truck, new_nodes, specs + [(p, q, (c,))])
+                # 与 _truck_candidates / _drone_candidates 同一条铁律：锚点位置冲突时
+                # route_from_specs 会**静默丢弃**整段架次，客户 c 就此消失。
+                # 这类「丢客户」不报错、成本还更低，会被当成更优解——M5 踩过一次，
+                # 换禁飞区摆放后又复发，由 test_修复能还原可行解 抓出。
+                if not _keeps_all(r, trial, c):
+                    continue
                 before_ok, before_cost = _route_eval(inst, r)
                 ok, cost = _route_eval(inst, trial)
                 if ok and cost < before_cost:

@@ -58,6 +58,7 @@ python -m src.generator      # 输出 data/instances/set01.json … set16.json �
 - `M7_灵敏度分析.md`：Fig.9–12 复刻结果、与论文的三处差异、以及「多种子取均值」的方法说明
 - `M8_复现评估与改进方向.md`：对齐/未对齐清单（按可修性分三类）、性能剖析与优化优先级、六个 ML/LLM 方向的取舍
 - `M8_执行记录_提速与论文协议.md`：4.6× 提速（结果逐位不变）、2000 轮 × 10 种子结果、四行消融
+- `Without-detour_幅度诊断.md`：该列 1.2% vs 论文 8.2% 的完整归因（三组扫描 + 算术上界 + 硬约束）
 - `results/figs/routes_fig8.png`：四个代表算例的求解路线（卡车实线、无人机虚线、禁飞区粉圈）
 - `results/figs/compare_with_paper.png`：与论文 Fig.8 同版式对照（含 Elsevier 原图，不入库）
 - `约束逐条翻译_2-79.md`：79 条约束逐条公式 + 直译 + 为什么需要 + 启发式如何处理
@@ -88,6 +89,8 @@ python -m scripts.run_pso          # 旧版：在同一批解上补 PSO 列 → 
 python -m scripts.run_milp         # 4 个 10 客户算例的 MILP 最优 → results/milp_check.csv
 python -m scripts.style_preview    # 配色核对：色板 + 论文原图并排
 python -m scripts.sensitivity      # M7 灵敏度（Fig.9–12），约 20–45 min，逐点落盘可续跑
+python -m scripts.probe_detour     # 时段覆盖率 × 半径 对 Without-detour 的影响
+python -m scripts.diag_detour      # 禁止绕行后的解结构变化（客户改派数、架次、里程）
 ```
 
 ### 两个容易混淆的开关
