@@ -32,3 +32,9 @@ results/figs/style_vs_paper.png
 
 # 旧结果归档：只保留 CSV 作对照，图不入库
 results/archive/*.png
+
+# ---- 个人文档：留在本地，不入库 ----
+00_开工须知.md
+项目交接文档_运筹求职与TRE复现.md
+TDEVRP去月表化求职轻量包.md
+运筹优化学习路线_实习研究双轨版.html
