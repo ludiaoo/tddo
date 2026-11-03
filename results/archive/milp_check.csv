@@ -1,0 +1,5 @@
+set,n_customers,n_trucks,milp_cost,milp_bound,milp_gap_pct,milp_cpu_s,milp_status,alns_cost,alns_seed,alns_cpu_s,alns_vs_milp_pct
+1,10,3,98.724,98.724,0.0,303.0,optimal,99.933,0,2.5,1.225
+2,10,2,115.9189,115.9189,0.0,11.4,optimal,115.9189,0,2.8,0.0
+3,10,2,67.7647,67.7647,0.0,15.9,optimal,67.7699,0,2.7,0.008
+4,10,2,73.3771,73.3771,0.0,66.8,optimal,73.3771,1,2.6,0.0

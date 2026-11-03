@@ -1,27 +1,11 @@
 {
  "set": 13,
- "seed": 0,
- "iters": 60,
- "cost": 636.1628,
- "cpu_s": 40.53,
+ "seed": 4,
+ "iters": 2000,
+ "cost": 599.0164,
+ "cpu_s": 163.05,
  "solution": {
   "routes": [
-   {
-    "truck": 11,
-    "nodes": [
-     0,
-     0
-    ],
-    "sorties": []
-   },
-   {
-    "truck": 10,
-    "nodes": [
-     0,
-     0
-    ],
-    "sorties": []
-   },
    {
     "truck": 13,
     "nodes": [
@@ -31,7 +15,7 @@
     "sorties": []
    },
    {
-    "truck": 1,
+    "truck": 9,
     "nodes": [
      0,
      0
@@ -39,7 +23,7 @@
     "sorties": []
    },
    {
-    "truck": 5,
+    "truck": 3,
     "nodes": [
      0,
      0
@@ -47,15 +31,7 @@
     "sorties": []
    },
    {
-    "truck": 6,
-    "nodes": [
-     0,
-     0
-    ],
-    "sorties": []
-   },
-   {
-    "truck": 7,
+    "truck": 0,
     "nodes": [
      0,
      0
@@ -71,52 +47,42 @@
     "sorties": []
    },
    {
-    "truck": 9,
+    "truck": 10,
     "nodes": [
      0,
-     31,
-     52,
-     57,
-     40,
-     51,
-     74,
-     41,
-     66,
-     43,
-     77,
      0
     ],
-    "sorties": [
-     {
-      "launch": 1,
-      "recover": 4,
-      "customers": [
-       26,
-       33,
-       60,
-       13
-      ]
-     },
-     {
-      "launch": 5,
-      "recover": 8,
-      "customers": [
-       3,
-       16
-      ]
-     }
-    ]
+    "sorties": []
    },
    {
-    "truck": 3,
+    "truck": 6,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 11,
+    "nodes": [
+     0,
+     0
+    ],
+    "sorties": []
+   },
+   {
+    "truck": 5,
     "nodes": [
      0,
      11,
-     12,
-     82,
-     81,
-     95,
-     54,
+     40,
+     3,
+     51,
+     74,
+     41,
+     16,
+     27,
+     89,
      0
     ],
     "sorties": [
@@ -124,49 +90,8 @@
       "launch": 5,
       "recover": 6,
       "customers": [
-       79,
-       63
-      ]
-     },
-     {
-      "launch": 1,
-      "recover": 2,
-      "customers": [
-       21,
-       50,
-       84
-      ]
-     },
-     {
-      "launch": 3,
-      "recover": 4,
-      "customers": [
-       35
-      ]
-     }
-    ]
-   },
-   {
-    "truck": 0,
-    "nodes": [
-     0,
-     48,
-     10,
-     25,
-     44,
-     2,
-     42,
-     0
-    ],
-    "sorties": [
-     {
-      "launch": 4,
-      "recover": 5,
-      "customers": [
-       83,
-       9,
-       75,
-       55
+       13,
+       52
       ]
      },
      {
@@ -174,9 +99,23 @@
       "recover": 2,
       "customers": [
        58,
-       91,
-       80,
-       78
+       26,
+       31
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 4,
+      "customers": [
+       57
+      ]
+     },
+     {
+      "launch": 7,
+      "recover": 8,
+      "customers": [
+       66,
+       88
       ]
      }
     ]
@@ -187,98 +126,72 @@
      0,
      71,
      47,
-     93,
-     68,
-     46,
+     59,
+     45,
+     98,
      72,
-     92,
-     36,
-     62,
-     49,
-     86,
+     6,
+     53,
+     99,
+     37,
+     7,
+     28,
+     61,
+     23,
+     20,
      0
     ],
     "sorties": [
      {
-      "launch": 10,
-      "recover": 11,
+      "launch": 1,
+      "recover": 2,
       "customers": [
-       30,
-       94
-      ]
-     },
-     {
-      "launch": 4,
-      "recover": 5,
-      "customers": [
-       1,
-       85,
-       38
-      ]
-     },
-     {
-      "launch": 2,
-      "recover": 3,
-      "customers": [
-       17,
+       48,
+       80,
        14
       ]
      },
      {
-      "launch": 6,
-      "recover": 8,
+      "launch": 13,
+      "recover": 15,
       "customers": [
-       67,
-       69,
-       73,
-       90
-      ]
-     }
-    ]
-   },
-   {
-    "truck": 12,
-    "nodes": [
-     0,
-     88,
-     89,
-     27,
-     76,
-     53,
-     99,
-     37,
-     39,
-     29,
-     61,
-     20,
-     23,
-     0
-    ],
-    "sorties": [
-     {
-      "launch": 3,
-      "recover": 5,
-      "customers": [
-       6,
-       18,
-       70
-      ]
-     },
-     {
-      "launch": 7,
-      "recover": 11,
-      "customers": [
-       7,
-       28,
        64,
        4
       ]
      },
      {
-      "launch": 1,
-      "recover": 2,
+      "launch": 11,
+      "recover": 12,
       "customers": [
+       39,
+       29
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 4,
+      "customers": [
+       22,
+       33,
+       5,
        96
+      ]
+     },
+     {
+      "launch": 9,
+      "recover": 10,
+      "customers": [
+       76,
+       70
+      ]
+     },
+     {
+      "launch": 5,
+      "recover": 6,
+      "customers": [
+       8,
+       24,
+       19
       ]
      }
     ]
@@ -287,15 +200,22 @@
     "truck": 8,
     "nodes": [
      0,
-     59,
-     98,
-     45,
+     97,
      87,
      56,
-     19,
-     32,
+     60,
+     15,
+     68,
+     93,
+     46,
+     69,
+     73,
+     90,
+     62,
+     30,
+     92,
      65,
-     100,
+     42,
      0
     ],
     "sorties": [
@@ -303,19 +223,111 @@
       "launch": 1,
       "recover": 5,
       "customers": [
-       8,
-       5,
-       24,
-       22
+       17,
+       18,
+       1
       ]
      },
      {
-      "launch": 6,
+      "launch": 8,
       "recover": 9,
       "customers": [
-       97,
-       15,
-       34
+       38,
+       85,
+       67
+      ]
+     },
+     {
+      "launch": 10,
+      "recover": 11,
+      "customers": [
+       36
+      ]
+     },
+     {
+      "launch": 13,
+      "recover": 15,
+      "customers": [
+       94,
+       86,
+       49
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 1,
+    "nodes": [
+     0,
+     91,
+     44,
+     25,
+     43,
+     2,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 5,
+      "customers": [
+       9,
+       75,
+       55
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 7,
+    "nodes": [
+     0,
+     10,
+     77,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       78,
+       84,
+       50,
+       83
+      ]
+     }
+    ]
+   },
+   {
+    "truck": 12,
+    "nodes": [
+     0,
+     12,
+     34,
+     32,
+     100,
+     54,
+     0
+    ],
+    "sorties": [
+     {
+      "launch": 1,
+      "recover": 2,
+      "customers": [
+       82,
+       21,
+       35
+      ]
+     },
+     {
+      "launch": 3,
+      "recover": 5,
+      "customers": [
+       63,
+       95,
+       81,
+       79
       ]
      }
     ]
