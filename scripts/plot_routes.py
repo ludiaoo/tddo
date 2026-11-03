@@ -4,13 +4,15 @@
     python -m scripts.plot_routes --all      # 16 个算例全画
     python -m scripts.plot_routes --refresh  # 忽略缓存，重新求解
 
-解会缓存在 `results/solutions/setXX.json`，与 `results/table3_with_pso.csv` 的
-ALNS 最优解是同一批（相同种子与轮数），改了 ALNS 代码后记得 `--refresh`。
+解会缓存在 `results/solutions/setXX.json`。**求解口径与 Table 3 完全一致**：轮数取 2000，
+种子取 `bench_main.csv` 里该算例达到最优的那个，所以图上标题的成本就是表里那一格。
+改了 ALNS 代码后记得 `--refresh`。
 """
 
 from __future__ import annotations
 
 import argparse
+import csv
 import json
 import time
 from pathlib import Path
@@ -28,13 +30,29 @@ from src.visualizer import attach_legend, plot_solution, solution_legend_handles
 CACHE = PROJECT_ROOT / "results" / "solutions"
 FIG_DIR = PROJECT_ROOT / "results" / "figs"
 REPRESENTATIVE = [1, 5, 9, 13]          # 10 / 25 / 50 / 100 客户各一个，对应 Fig.8 的四档
+BENCH = PROJECT_ROOT / "results" / "bench_main.csv"
+PAPER_ITERS = 2000
 
 
-def _iters(n: int) -> int:
-    return 300 if n <= 25 else (150 if n <= 50 else 60)
+def _best_seed(set_id: int) -> tuple[int, int]:
+    """取该算例在 `bench_main.csv` 里达到最优的 (种子, 轮数)，保证图与表同源。
+
+    缺文件时退回 (seed 0, 2000 轮)——成本可能比表里略高，但仍是合法解。
+    """
+    if not BENCH.exists():
+        return 0, PAPER_ITERS
+    best: tuple[float, int, int] | None = None
+    with open(BENCH, encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if int(row["set"]) != set_id or int(row["tune"]) != 1:
+                continue
+            cand = (float(row["best_cost"]), int(row["seed"]), int(row["iters"]))
+            if best is None or cand[0] < best[0]:
+                best = cand
+    return (best[1], best[2]) if best else (0, PAPER_ITERS)
 
 
-def get_solution(inst, *, refresh: bool = False, seed: int = 0) -> tuple:
+def get_solution(inst, *, refresh: bool = False, seed: int | None = None) -> tuple:
     """取（或算）一个算例的 ALNS 最优解，返回 (sol, cost, from_cache)。"""
     CACHE.mkdir(parents=True, exist_ok=True)
     path = CACHE / f"set{inst.set_id:02d}.json"
@@ -44,7 +62,8 @@ def get_solution(inst, *, refresh: bool = False, seed: int = 0) -> tuple:
         _, cost = evaluate(inst, sol)
         return sol, cost, True
 
-    iters = _iters(inst.n_customers)
+    auto_seed, iters = _best_seed(inst.set_id)
+    seed = auto_seed if seed is None else seed
     t0 = time.time()
     r = solve(inst, seed=seed, iters=iters)
     cpu = time.time() - t0
