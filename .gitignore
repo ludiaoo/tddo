@@ -38,3 +38,6 @@ results/archive/*.png
 项目交接文档_运筹求职与TRE复现.md
 TDEVRP去月表化求职轻量包.md
 运筹优化学习路线_实习研究双轨版.html
+
+# ML 训练数据体积大（160 MB），用 scripts.collect_candidates 两分钟可复现，不入库
+results/ml/candidates_*.csv.gz

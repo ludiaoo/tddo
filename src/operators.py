@@ -12,12 +12,16 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 
 import numpy as np
 
+from . import ml
 from .evaluator import _simulate_route, evaluate
 from .instance import Instance
+from .ml import features as ml_features
+from .ml.screen import LightGBMScreen
 from .solution import DEPOT, Route, Solution, route_from_specs, route_to_specs
 
 TOP_K = 6          # 粗排后真正做完整评估的候选数
@@ -59,7 +63,37 @@ def _route_eval(inst: Instance, route: Route) -> tuple[bool, float]:
     if len(memo) >= _MEMO_CAP:
         memo.clear()
     memo[sig] = res
+    # 顺带把完整 RouteEval 存进 ML 用的 memo（特征需要 finish/waiting 等精确量），
+    # 让 ML 路径的 `before` 直接命中这里，而不是再跑一遍 fast=False 的完整仿真
+    ev_memo = getattr(inst, "_route_memo_ev", None)
+    if ev_memo is None:
+        ev_memo = {}
+        inst._route_memo_ev = ev_memo
+    if len(ev_memo) >= _MEMO_CAP:
+        ev_memo.clear()
+    ev_memo[sig] = ev
     return res
+
+
+def _route_eval_ev(inst: Instance, route: Route):
+    """带 RouteEval 的记忆化版本（只给 ML 路径用，特征需要 finish/waiting 等精确量）。
+
+    与 `_route_eval` 各自独立成 memo：off 路径完全不经过这里，行为不受影响。
+    """
+    sig = (route.truck, tuple(route.nodes),
+           tuple((s.launch, s.recover, s.customers) for s in route.sorties))
+    memo = getattr(inst, "_route_memo_ev", None)
+    if memo is None:
+        memo = {}
+        inst._route_memo_ev = memo
+    got = memo.get(sig)
+    if got is not None:
+        return got
+    ev = _simulate_route(inst, route, fast=False)
+    if len(memo) >= _MEMO_CAP:
+        memo.clear()
+    memo[sig] = ev
+    return ev
 
 
 def _keeps_all(base: Route, trial: Route, new: int) -> bool:
@@ -271,16 +305,67 @@ def _truck_candidates(inst: Instance, sol: Solution, c: int):
     return out
 
 
-def _drone_candidates(inst: Instance, sol: Solution, c: int):
-    """所有可行的无人机插入候选（并入已有架次 / 新建架次）。"""
+SCREEN_TOP_M = max(1, int(os.environ.get("ML_SCREEN_TOP_M", "5")))
+SCREEN_FALLBACK = max(0.0, float(os.environ.get("ML_SCREEN_FALLBACK", "0.05")))
+SCREEN_MIN_N = max(1, int(os.environ.get("ML_SCREEN_MIN_N", "100")))
+_SCREEN: LightGBMScreen | None = None
+_SCREEN_TRIED = False
+
+
+def _get_screen() -> LightGBMScreen | None:
+    """惰性加载预筛模型；缺失、lightgbm 不可用或特征不一致时返回 None（退回全量评估）。"""
+    global _SCREEN, _SCREEN_TRIED
+    if not _SCREEN_TRIED:
+        _SCREEN_TRIED = True
+        try:
+            if LightGBMScreen.available():
+                _SCREEN = LightGBMScreen()
+        except Exception as exc:                 # 模型坏了不能拖垮求解
+            print(f"[ml] 预筛模型加载失败，退回全量评估：{exc}")
+            _SCREEN = None
+    return _SCREEN
+
+
+def _drone_candidates(inst: Instance, sol: Solution, c: int, rng=None):
+    """所有可行的无人机插入候选（并入已有架次 / 新建架次），按真实 Δcost 升序。
+
+    模式（`src/ml/state`，默认 off）：
+
+    - **off**：全量评估，与历史行为**逐位一致**；
+    - **collect**：同样全量评估（决策与随机数消耗都不变），额外把「特征 + 标签」喂给采集器；
+    - **screen**：候选先打分，只评估 top-m（`ML_SCREEN_TOP_M`，默认 5）+ 5% 随机兜底
+      （结果**有意**不同）。模型缺失时自动退回全量评估。
+
+    ⚠ `_drone_candidates_full` 与 `_drone_candidates_screen` 的**候选生成规则必须一致**
+    （同一个循环骨架），否则 hit-rate 指标会失真。改这里时两个函数一起改。
+    """
+    mode = ml.get_mode()
+    if mode == "screen":
+        # 分级启用：小算例的单次评估本来就很便宜（且大量 memo 命中），
+        # 打分的固定开销反而更贵——实测 Set9（50 客户）慢 13%，Set13（100 客户）快 9%。
+        # 阈值 `ML_SCREEN_MIN_N`（默认 100）以下保持原路径。
+        if inst.n_customers >= SCREEN_MIN_N:
+            return _drone_candidates_screen(inst, sol, c, rng)
+    return _drone_candidates_full(inst, sol, c, mode)
+
+
+def _drone_candidates_full(inst: Instance, sol: Solution, c: int, mode: str):
+    """off / collect 共用：全量评估每个候选。collect 模式额外记录「特征 + 标签」。"""
     if not inst.allow_drones:              # Truck-only 对照组：没有任何无人机候选
         return []
+    collect = mode == "collect"
+    if collect:
+        ml.next_step()
+        ml.bump("steps")
     out = []
     for idx, r in enumerate(sol.routes):
         specs = route_to_specs(r)
-        before_ok, before_cost = _route_eval(inst, r)
-        if not before_ok:
+        before = _route_eval_ev(inst, r)
+        if not before.feasible:
             continue
+        before_cost = before.cost(inst)
+        ctx = ml_features.route_ctx(inst, r) if collect else None
+        sinfo = ctx["specs_info"] if collect else None
 
         # ① 并入已有架次：插到飞行序列的任一位置
         for i, (p, q, cust) in enumerate(specs):
@@ -290,7 +375,26 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int):
                 trial = route_from_specs(r.truck, r.nodes, trial_specs)
                 if not _keeps_all(r, trial, c):
                     continue
+                feats = None
+                if collect:
+                    ml.bump("attempts")
+                    si = sinfo[i]
+                    try:
+                        feats = ml_features.drone_candidate_features(
+                            inst, ctx, before,
+                            kind=0, sp=si["sp"], sq=si["sq"], sortie=cust, pos=pos, c=c,
+                            anchor_nfz=si["nfz"], old_len=si["old_len"],
+                            anchor_truck_dist=si["truck_dist"],
+                            sortie_f=si["f_sum"], sortie_g=si["g_sum"], si=si,
+                        )
+                    except Exception:
+                        ml.bump("feat_errors")
                 ok, cost = _route_eval(inst, trial)
+                if collect:
+                    ml.bump("evals")
+                    ml.record({**(dict(zip(ml_features.FEATURE_NAMES, feats)) if feats else {}),
+                               "feasible": int(ok),
+                               "delta": (cost - before_cost) if ok else float("nan")})
                 if ok:
                     new_sol = Solution([x for j, x in enumerate(sol.routes) if j != idx] + [trial])
                     out.append((cost - before_cost, new_sol))
@@ -305,11 +409,131 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int):
             trial = route_from_specs(r.truck, r.nodes, specs + [(p, q, (c,))])
             if not _keeps_all(r, trial, c):
                 continue
+            feats = None
+            if collect:
+                ml.bump("attempts")
+                try:
+                    feats = ml_features.drone_candidate_features(
+                        inst, ctx, before,
+                        kind=1, sp=k, sq=k + 1, sortie=(), pos=0, c=c,
+                        anchor_nfz=ctx["leg_nfz"][k], old_len=0.0,
+                        anchor_truck_dist=float(inst.base.truck_dist_m[p, q]),
+                        sortie_f=0.0, sortie_g=0.0, leg_k=k,
+                    )
+                except Exception:
+                    ml.bump("feat_errors")
             ok, cost = _route_eval(inst, trial)
+            if collect:
+                ml.bump("evals")
+                ml.record({**(dict(zip(ml_features.FEATURE_NAMES, feats)) if feats else {}),
+                           "feasible": int(ok),
+                           "delta": (cost - before_cost) if ok else float("nan")})
             if ok:
                 new_sol = Solution([x for j, x in enumerate(sol.routes) if j != idx] + [trial])
                 out.append((cost - before_cost, new_sol))
 
+    out.sort(key=lambda x: x[0])
+    return out
+
+
+def _drone_candidates_screen(inst: Instance, sol: Solution, c: int, rng=None):
+    """screen 模式：候选生成规则与 `_drone_candidates_full` 完全一致，只省评估。
+
+    打分（`LightGBMScreen.select`）：p_feas ≥ 阈值者按 Δcost_hat 升序取前 m，
+    不足再用 p_feas 最高的补；另加 `ML_SCREEN_FALLBACK`（默认 5%）随机候选兜底，
+    防止模型把真正的好候选永远压在评估之外。
+    """
+    screen_model = _get_screen()
+    if screen_model is None:                 # 没模型 → 与 off 行为一致
+        return _drone_candidates_full(inst, sol, c, "off")
+    if not inst.allow_drones:                # Truck-only 对照组：没有任何无人机候选
+        return []
+    ml.next_step()
+    ml.bump("steps")
+
+    # 两阶段：先只算「特征」，线性门 + 精排之后**才**构造 trial 与评估。
+    # v1 的教训：给每个候选都 route_from_specs + 跑 LightGBM，开销比省下的评估还大。
+    pend: list[tuple[tuple, tuple]] = []       # (feats, gen)  gen = 重建候选所需的全部参数
+    for idx, r in enumerate(sol.routes):
+        specs = route_to_specs(r)
+        before = _route_eval_ev(inst, r)
+        if not before.feasible:
+            continue
+        ctx = ml_features.route_ctx(inst, r)
+        f_list, g_list = ctx["f_list"], ctx["g_list"]
+
+        for i, si in enumerate(ctx["specs_info"]):
+            cust = si["cust"]
+            # O(1) 硬预筛：载荷是必要条件（发射时全部派件在机 / 返航前全部取件在机），
+            # 违反的候选连特征都不用算。只用于 screen 路径（collect 保持与 off 全量一致）。
+            if si["f_sum"] + f_list[c] > inst.params.drone_capacity + 1e-9 \
+                    or si["g_sum"] + g_list[c] > inst.params.drone_capacity + 1e-9:
+                continue
+            for pos in range(len(cust) + 1):
+                ml.bump("attempts")
+                feats = ml_features.drone_candidate_features(
+                    inst, ctx, before,
+                    kind=0, sp=si["sp"], sq=si["sq"], sortie=cust, pos=pos, c=c,
+                    anchor_nfz=si["nfz"], old_len=si["old_len"],
+                    anchor_truck_dist=si["truck_dist"],
+                    sortie_f=si["f_sum"], sortie_g=si["g_sum"], si=si,
+                )
+                pend.append((feats, ("merge", idx, i, pos)))
+
+        cap = inst.params.drone_capacity + 1e-9
+        f_c, g_c = ctx["f_list"][c], ctx["g_list"][c]
+        for k in range(len(r.nodes) - 1):
+            p, q = r.nodes[k], r.nodes[k + 1]
+            if p == DEPOT or q == DEPOT:
+                continue
+            if any((sp, sq) == (p, q) for sp, sq, _ in specs):
+                continue
+            if f_c + g_c > cap:            # 单客户载荷超限（派件 + 取件同时在机）
+                continue
+            ml.bump("attempts")
+            feats = ml_features.drone_candidate_features(
+                inst, ctx, before,
+                kind=1, sp=k, sq=k + 1, sortie=(), pos=0, c=c,
+                anchor_nfz=ctx["leg_nfz"][k], old_len=0.0,
+                anchor_truck_dist=float(inst.base.truck_dist_m[p, q]),
+                sortie_f=0.0, sortie_g=0.0, leg_k=k,
+            )
+            pend.append((feats, ("new", idx, k)))
+
+    m = min(SCREEN_TOP_M, len(pend))
+    picked = set(screen_model.select([f for f, *_ in pend], m))
+    if rng is not None and SCREEN_FALLBACK > 0 and len(pend) > m:
+        rest = [i for i in range(len(pend)) if i not in picked]
+        n_extra = max(1, int(round(SCREEN_FALLBACK * len(pend))))
+        if rest:
+            for i in rng.choice(rest, size=min(n_extra, len(rest)), replace=False):
+                picked.add(int(i))
+
+    out = []
+    for i in sorted(picked):
+        feats, gen = pend[i]
+        if gen[0] == "merge":
+            _, idx, i, pos = gen
+            r = sol.routes[idx]
+            specs = route_to_specs(r)
+            p, q, cust = specs[i]
+            trial = route_from_specs(
+                r.truck, r.nodes, specs[:i] + [(p, q, cust[:pos] + (c,) + cust[pos:])] + specs[i + 1:]
+            )
+        else:
+            _, idx, k = gen
+            r = sol.routes[idx]
+            specs = route_to_specs(r)
+            p, q = r.nodes[k], r.nodes[k + 1]
+            trial = route_from_specs(r.truck, r.nodes, specs + [(p, q, (c,))])
+        if not _keeps_all(r, trial, c):          # 延迟到选完之后做，代价一样
+            continue
+        before = _route_eval_ev(inst, r)
+        ml.bump("evals")
+        ok, cost = _route_eval(inst, trial)
+        if ok:
+            new_sol = Solution([x for j, x in enumerate(sol.routes) if j != idx] + [trial])
+            out.append((cost - before.cost(inst), new_sol))
     out.sort(key=lambda x: x[0])
     return out
 
@@ -320,7 +544,7 @@ def _apply_repair(inst, sol, removed, rng, prefer: str) -> Solution | None:
     cur = sol
     for c in order:
         truck = _truck_candidates(inst, cur, c)
-        drone = _drone_candidates(inst, cur, c)
+        drone = _drone_candidates(inst, cur, c, rng)
         pools = {"truck": truck, "drone": drone, "any": truck + drone}
         pool = pools[prefer]
         if not pool:
@@ -339,7 +563,7 @@ def repair_random(inst: Instance, rem: Removal, rng) -> Solution | None:
     rng.shuffle(order)
     cur = rem.sol
     for c in order:
-        pool = _truck_candidates(inst, cur, c) + _drone_candidates(inst, cur, c)
+        pool = _truck_candidates(inst, cur, c) + _drone_candidates(inst, cur, c, rng)
         if not pool:
             return None
         cur = pool[int(rng.integers(len(pool)))][1]

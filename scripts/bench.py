@@ -25,16 +25,20 @@ _CFG = None
 _SETS = None
 
 
-def _init() -> None:
+def _init(ml_screen: bool = False) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
     _SETS = {s["id"]: s for s in load_sets()}
+    if ml_screen:
+        from src.ml import state
+        state.set_mode("screen")
 
 
 def _run(task: tuple) -> dict:
     from src.alns import solve
     from src.generator import build_instance
+    from src.ml import state
 
     sid, seed, iters, tune, use_drone, use_detour = task
     t0 = time.time()
@@ -43,6 +47,7 @@ def _run(task: tuple) -> dict:
         inst, seed=seed, iters=iters, tune=tune,
         use_drone=use_drone, use_detour=use_detour,
     )
+    cnt = state.counters()
     return {
         "set": sid,
         "n_customers": inst.n_customers,
@@ -58,13 +63,15 @@ def _run(task: tuple) -> dict:
         "t0": round(float(r.t0_used), 2),
         "restarts": int(r.restarts),
         "cpu_s": round(time.time() - t0, 2),
+        "ml_attempts": cnt.get("attempts", 0),
+        "ml_evals": cnt.get("evals", 0),
     }
 
 
 FIELDS = [
     "set", "n_customers", "n_trucks", "seed", "iters", "tune",
     "use_drone", "use_detour", "initial_cost", "best_cost",
-    "saving_pct", "t0", "restarts", "cpu_s",
+    "saving_pct", "t0", "restarts", "cpu_s", "ml_attempts", "ml_evals",
 ]
 
 
@@ -79,6 +86,8 @@ def main() -> None:
     ap.add_argument("--no-detour", action="store_true", help="Without-detour 对照")
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--refresh", action="store_true", help="忽略已有 CSV，重跑")
+    ap.add_argument("--ml-screen", action="store_true",
+                    help="启用 M9.1 候选预筛（默认关；关时与历史结果逐位一致）")
     args = ap.parse_args()
 
     tune = not args.no_tune
@@ -115,7 +124,8 @@ def main() -> None:
     t_all = time.time()
     n_done = 0
     try:
-        with ProcessPoolExecutor(max_workers=workers, initializer=_init) as pool:
+        with ProcessPoolExecutor(max_workers=workers, initializer=_init,
+                                 initargs=(args.ml_screen,)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]
