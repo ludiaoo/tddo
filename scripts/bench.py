@@ -23,9 +23,12 @@ from src.io import PROJECT_ROOT, load_config, load_sets
 
 _CFG = None
 _SETS = None
+_OP_POLICY = "adaptive"
+_FIXED_PAIR = None
 
 
-def _init(ml_screen: bool = False) -> None:
+def _init(ml_screen: bool = False, op_policy: str = "adaptive",
+          fixed_pair: str | None = None) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -33,6 +36,9 @@ def _init(ml_screen: bool = False) -> None:
     if ml_screen:
         from src.ml import state
         state.set_mode("screen")
+    global _OP_POLICY, _FIXED_PAIR
+    _OP_POLICY = op_policy
+    _FIXED_PAIR = fixed_pair
 
 
 def _run(task: tuple) -> dict:
@@ -46,6 +52,7 @@ def _run(task: tuple) -> dict:
     r = solve(
         inst, seed=seed, iters=iters, tune=tune,
         use_drone=use_drone, use_detour=use_detour,
+        op_policy=_OP_POLICY, fixed_pair=_FIXED_PAIR,
     )
     cnt = state.counters()
     return {
@@ -86,6 +93,10 @@ def main() -> None:
     ap.add_argument("--no-detour", action="store_true", help="Without-detour 对照")
     ap.add_argument("--workers", type=int, default=0)
     ap.add_argument("--refresh", action="store_true", help="忽略已有 CSV，重跑")
+    ap.add_argument("--op-policy", default="adaptive",
+                    choices=["adaptive", "uniform", "fixed"],
+                    help="算子选择策略（诊断用；默认 adaptive = 论文的轮盘赌+权重）")
+    ap.add_argument("--fixed-pair", default=None, help="op-policy=fixed 时的 '坏|修' 组合")
     ap.add_argument("--ml-screen", action="store_true",
                     help="启用 M9.1 候选预筛（默认关；关时与历史结果逐位一致）")
     args = ap.parse_args()
@@ -125,7 +136,7 @@ def main() -> None:
     n_done = 0
     try:
         with ProcessPoolExecutor(max_workers=workers, initializer=_init,
-                                 initargs=(args.ml_screen,)) as pool:
+                                 initargs=(args.ml_screen, args.op_policy, args.fixed_pair)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

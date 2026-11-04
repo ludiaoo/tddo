@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import math
+import os
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -20,7 +21,7 @@ from .instance import Instance
 from .operators import DESTROY, REPAIR
 from .solution import Solution
 
-WEIGHT_FLOOR = 0.05
+WEIGHT_FLOOR = float(os.environ.get("ALNS_WEIGHT_FLOOR", "0.05"))  # 可调：算子权重下限，防饿死
 
 
 @dataclass
@@ -137,11 +138,18 @@ def solve(
     ratio: float | None = None,
     max_no_improve: int | None = None,
     tune: bool = True,
+    trace=None,
+    op_policy: str = "adaptive",
+    fixed_pair: str | None = None,
 ) -> ALNSResult:
     """ALNS 主循环。
 
     `tune=False` 复原论文的原始参数（T0=300、破坏率固定 30%、停滞回退到最优），
     用于消融对照；`tune=True`（默认）启用本项目的三处修正：
+
+    `trace`：可选回调，每轮把「状态 + 动作 + 结果」交给它（M9.3 的诊断用，
+    默认 None 时零开销）。`op_policy="uniform"` 强制 16 个算子对等概率随机选，
+    用于得到**动作覆盖均衡**的样本（估 conditional 成功率时避免选择偏差）。
 
     | 项 | 论文 | 本项目 | 为什么 |
     |---|---|---|---|
@@ -181,8 +189,15 @@ def solve(
     restarts = 0
     history = [cur_cost]
 
+    names_d, names_r = tuple(DESTROY), tuple(REPAIR)
     for it in range(iters):
-        dn, rn = _roulette(rng, wd), _roulette(rng, wr)
+        if fixed_pair is not None:
+            dn, rn = fixed_pair.split("|")
+        elif op_policy == "uniform":
+            dn = names_d[int(rng.integers(len(names_d)))]
+            rn = names_r[int(rng.integers(len(names_r)))]
+        else:
+            dn, rn = _roulette(rng, wd), _roulette(rng, wr)
         if ratio is not None:
             r = ratio
         elif tune:
@@ -222,6 +237,26 @@ def solve(
         wr[rn] = max(wr[rn], WEIGHT_FLOOR)
 
         T *= alpha
+
+        if trace is not None:
+            n_sorties = sum(len(r.sorties) for r in sol.routes)
+            drone_served = sum(len(s.customers) for r in sol.routes for s in r.sorties)
+            trace({
+                "it": it,
+                "action": f"{dn}|{rn}",
+                "destroy": dn, "repair": rn,
+                "destroyed": len(rem.removed),
+                "status": status,
+                "delta": (ccost - cur_cost) if status != "rejected" or cand is not None else float("nan"),
+                "feasible": 0 if cand is None else int(cres.feasible),
+                "cur_cost": cur_cost, "best_cost": best_cost,
+                "cur_over_best": cur_cost / best_cost - 1.0 if best_cost else 0.0,
+                "no_improve": no_improve, "T": T, "restarts": restarts,
+                "n_routes": len(sol.routes), "n_sorties": n_sorties,
+                "drone_served": drone_served,
+                "n_customers": inst.n_customers, "n_trucks": inst.n_trucks,
+                "nfz_count": len(inst.nfz),
+            })
 
         # 停滞计数：以「多久没刷新全局最优」为准（原实现数的是「多少轮没被接受」，
         # 与论文「连续 200 次无改进」的语义不符）
