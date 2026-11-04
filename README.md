@@ -465,6 +465,8 @@ scripts/bench.py
 | `diag_detour.py` | 175 | 禁绕后解的结构变化（客户改派、架次、无人机/卡车里程、司机时长） | `diag_detour.csv` |
 | `probe_detour.py` | 179 | 时段覆盖率 × 半径 扫描，看增益能否被推高 | `probe_detour.csv` |
 | `probe_placement.py` | 210 | 禁飞圆「压客户点」vs「夹在两客户之间」对照 | `probe_placement.csv` |
+| `probe_operator.py` | 181 | 每轮「状态 + 选的算子对 + 结果」日志，估算子的条件成功率 | `ml/oplog*.csv.gz` |
+| `probe_drl.py` | 213 | 同一状态下 16 组算子各跑 50 轮，量「换算子」与「换种子」的差 | `ml/drl_probe.csv` |
 
 **出图与工具**
 

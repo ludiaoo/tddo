@@ -141,6 +141,7 @@ def solve(
     trace=None,
     op_policy: str = "adaptive",
     fixed_pair: str | None = None,
+    init_sol=None,
 ) -> ALNSResult:
     """ALNS 主循环。
 
@@ -173,8 +174,12 @@ def solve(
         inst = disable_detour(inst)
 
     rng = np.random.default_rng(seed)
-    sol, cur_cost, _ = build_initial(inst)
-    res, _ = evaluate(inst, sol)
+    if init_sol is None:                      # 常规路径：论文 Algorithm 2 两阶段构造
+        sol, cur_cost, _ = build_initial(inst)
+        res, _ = evaluate(inst, sol)
+    else:                                     # 诊断路径：从给定状态继续（DRL/LLM 归因实验）
+        sol = init_sol
+        res, cur_cost = evaluate(inst, sol)
     if not res.feasible:                      # 初始解不可行就不该进主循环
         raise RuntimeError(f"初始解不可行：{res.all_violations()[:3]}")
 
@@ -256,6 +261,7 @@ def solve(
                 "drone_served": drone_served,
                 "n_customers": inst.n_customers, "n_trucks": inst.n_trucks,
                 "nfz_count": len(inst.nfz),
+                "sol": sol,
             })
 
         # 停滞计数：以「多久没刷新全局最优」为准（原实现数的是「多少轮没被接受」，
