@@ -22,6 +22,7 @@ from .operators import DESTROY, REPAIR
 from .solution import Solution
 
 WEIGHT_FLOOR = float(os.environ.get("ALNS_WEIGHT_FLOOR", "0.05"))  # 可调：算子权重下限，防饿死
+DQN_EPS = float(os.environ.get("ALNS_DQN_EPS", "0.1"))   # DQN 选择的 ε-探索（保多样性）
 
 
 @dataclass
@@ -59,6 +60,26 @@ def _apply_bias(w: dict[str, float], bias: dict[str, float]) -> None:
     if mean > 0:
         for k in w:
             w[k] = max(WEIGHT_FLOOR, w[k] / mean)
+
+
+_QNET = None
+_QNET_TRIED = False
+
+
+def _get_qnet():
+    """惰性加载 DQN 权重（M9.10）。缺失时返回 None，调用方退回轮盘赌。"""
+    global _QNET, _QNET_TRIED
+    if not _QNET_TRIED:
+        _QNET_TRIED = True
+        try:
+            from .qselect import QNet
+            from .io import PROJECT_ROOT
+            path = PROJECT_ROOT / "models" / "dqn" / "q.json"
+            if path.exists():
+                _QNET = QNet.load(path)
+        except Exception:
+            _QNET = None
+    return _QNET
 
 
 def _ucb_pick(rng, names, cnt: dict, rew: dict, t: int, c: float = 0.5) -> str:
@@ -242,6 +263,7 @@ def solve(
     rew_r = {k: 0.0 for k in REPAIR}
 
     names_d, names_r = tuple(DESTROY), tuple(REPAIR)
+    qnet = _get_qnet() if selector == "dqn" else None
 
     def _intervene(it: int) -> None:
         """周期性有界干预（M9.6）：把状态交给决策者，回收一个有界动作。
@@ -281,6 +303,17 @@ def solve(
         elif selector == "ucb":
             dn = _ucb_pick(rng, names_d, cnt_d, rew_d, it)
             rn = _ucb_pick(rng, names_r, cnt_r, rew_r, it)
+        elif selector == "dqn" and qnet is not None:
+            from .qselect import state_vector
+            st = state_vector(
+                it=it, iters=iters,
+                cur_over_best=(cur_cost / best_cost - 1.0) if best_cost else 0.0,
+                no_improve=no_improve, T=T, n_routes=len(sol.routes),
+                n_sorties=sum(len(r.sorties) for r in sol.routes),
+                drone_served=sum(len(s2.customers) for r in sol.routes for s2 in r.sorties),
+                n_customers=inst.n_customers, nfz=len(inst.nfz), restarts=restarts,
+            )
+            dn, rn = qnet.pick(st, rng, eps=DQN_EPS).split("|")
         else:
             dn, rn = _roulette(rng, wd), _roulette(rng, wr)
         if q_override is not None:

@@ -130,7 +130,7 @@ def main() -> None:
     ap.add_argument("--interv-every", type=int, default=50, help="每多少轮干预一次")
     ap.add_argument("--accept", default="sa", choices=["sa", "rel"],
                     help="接受准则：sa=绝对退火（现状），rel=相对劣化（M9.8）")
-    ap.add_argument("--selector", default="tier", choices=["tier", "ucb"],
+    ap.add_argument("--selector", default="tier", choices=["tier", "ucb", "dqn"],
                     help="算子选择：tier=四档加分（现状），ucb=UCB1（M9.8）")
     ap.add_argument("--degree", default="uniform", choices=["uniform", "big"],
                     help="破坏度：uniform=U(10%%,40%%)（现状），big=6%% 概率大破坏（M9.8）")
