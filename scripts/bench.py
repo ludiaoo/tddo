@@ -31,7 +31,7 @@ _INTERV_EVERY = 50
 
 def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           fixed_pair: str | None = None, interv: str = "none",
-          interv_every: int = 50) -> None:
+          interv_every: int = 50, extra_destroy: str | None = None) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -44,6 +44,11 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     _FIXED_PAIR = fixed_pair
     _INTERV = interv
     _INTERV_EVERY = interv_every
+    if extra_destroy:                      # 把候选破坏算子并进算子池（M9.7）
+        import importlib
+        from src.operators import DESTROY
+        mod = importlib.import_module(f"src.{extra_destroy}")
+        DESTROY.update(mod.CANDIDATES)
 
 
 def _run(task: tuple) -> dict:
@@ -109,6 +114,8 @@ def main() -> None:
     ap.add_argument("--interv", default="none", choices=["none", "random", "rule"],
                     help="周期性有界干预的决策者（M9.6 对照；默认 none = 与历史逐位一致）")
     ap.add_argument("--interv-every", type=int, default=50, help="每多少轮干预一次")
+    ap.add_argument("--extra-destroy", default=None,
+                    help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
                     help="启用 M9.1 候选预筛（默认关；关时与历史结果逐位一致）")
     args = ap.parse_args()
@@ -149,7 +156,8 @@ def main() -> None:
     try:
         with ProcessPoolExecutor(max_workers=workers, initializer=_init,
                                  initargs=(args.ml_screen, args.op_policy, args.fixed_pair,
-                                           args.interv, args.interv_every)) as pool:
+                                           args.interv, args.interv_every,
+                                           args.extra_destroy)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]
