@@ -44,6 +44,23 @@ class ALNSResult:
         return (self.initial_cost - self.best_cost) / self.initial_cost
 
 
+def _apply_bias(w: dict[str, float], bias: dict[str, float]) -> None:
+    """按偏置缩放算子权重，再归一到均值 1.0（原地修改）。
+
+    轮盘赌只看相对权重（`p = w / w.sum()`），所以归一是无损的；
+    归一同时防止「每段乘一次」在 40 段后把权重压成天文数字。
+    """
+    if not bias:
+        return
+    for k, v in bias.items():
+        if k in w:
+            w[k] = w[k] * (1.0 + float(v))
+    mean = sum(w.values()) / max(len(w), 1)
+    if mean > 0:
+        for k in w:
+            w[k] = max(WEIGHT_FLOOR, w[k] / mean)
+
+
 def _roulette(rng, weights: dict[str, float]) -> str:
     names = list(weights)
     w = np.array([max(weights[n], WEIGHT_FLOOR) for n in names], dtype=float)
@@ -142,6 +159,8 @@ def solve(
     op_policy: str = "adaptive",
     fixed_pair: str | None = None,
     init_sol=None,
+    interv_policy=None,
+    interv_every: int = 50,
 ) -> ALNSResult:
     """ALNS 主循环。
 
@@ -193,9 +212,41 @@ def solve(
     no_improve = 0
     restarts = 0
     history = [cur_cost]
+    q_override = None                 # 干预设定的破坏比例目标，持续到下一次干预
+    last_action = None
 
     names_d, names_r = tuple(DESTROY), tuple(REPAIR)
+
+    def _intervene(it: int) -> None:
+        """周期性有界干预（M9.6）：把状态交给决策者，回收一个有界动作。
+
+        `interv_policy=None` 时**一次都不调用**，所以默认路径与历史结果逐位一致。
+        """
+        nonlocal q_override, last_action, T
+        act = interv_policy({
+            "it": it,
+            "progress": it / max(iters, 1),
+            "cur_over_best": (cur_cost / best_cost - 1.0) if best_cost else 0.0,
+            "no_improve": no_improve,
+            "T": T,
+            "restarts": restarts,
+            "weights_d": dict(wd),
+            "weights_r": dict(wr),
+        })
+        if not act:
+            return
+        q_override = act.get("q")
+        # 温度乘子是**相对原退火曲线的有界调制**，不是对当前温度的连乘。
+        # 反例（本实验 v1 踩过）：40 次干预各 ×1.25 → 1.25^14 ≈ 23 倍，退火直接被废掉，
+        # 测出来的不是「干预的效果」而是「退火坏掉的效果」。
+        T = t0 * (alpha ** it) * float(act.get("temp_mult", 1.0))
+        _apply_bias(wd, act.get("bias_d") or {})
+        _apply_bias(wr, act.get("bias_r") or {})
+        last_action = act
+
     for it in range(iters):
+        if interv_policy is not None and it % interv_every == 0:
+            _intervene(it)
         if fixed_pair is not None:
             dn, rn = fixed_pair.split("|")
         elif op_policy == "uniform":
@@ -203,7 +254,9 @@ def solve(
             rn = names_r[int(rng.integers(len(names_r)))]
         else:
             dn, rn = _roulette(rng, wd), _roulette(rng, wr)
-        if ratio is not None:
+        if q_override is not None:
+            r = q_override
+        elif ratio is not None:
             r = ratio
         elif tune:
             r = float(rng.uniform(0.10, 0.40))
@@ -261,6 +314,7 @@ def solve(
                 "drone_served": drone_served,
                 "n_customers": inst.n_customers, "n_trucks": inst.n_trucks,
                 "nfz_count": len(inst.nfz),
+                "interv": last_action,
                 "sol": sol,
             })
 

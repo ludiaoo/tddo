@@ -25,10 +25,13 @@ _CFG = None
 _SETS = None
 _OP_POLICY = "adaptive"
 _FIXED_PAIR = None
+_INTERV = "none"
+_INTERV_EVERY = 50
 
 
 def _init(ml_screen: bool = False, op_policy: str = "adaptive",
-          fixed_pair: str | None = None) -> None:
+          fixed_pair: str | None = None, interv: str = "none",
+          interv_every: int = 50) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -36,9 +39,11 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     if ml_screen:
         from src.ml import state
         state.set_mode("screen")
-    global _OP_POLICY, _FIXED_PAIR
+    global _OP_POLICY, _FIXED_PAIR, _INTERV, _INTERV_EVERY
     _OP_POLICY = op_policy
     _FIXED_PAIR = fixed_pair
+    _INTERV = interv
+    _INTERV_EVERY = interv_every
 
 
 def _run(task: tuple) -> dict:
@@ -46,13 +51,17 @@ def _run(task: tuple) -> dict:
     from src.generator import build_instance
     from src.ml import state
 
+    from src.intervention import make_policy
+
     sid, seed, iters, tune, use_drone, use_detour = task
     t0 = time.time()
     inst = build_instance(_SETS[sid], _CFG)
+    pol = make_policy(_INTERV, seed)
     r = solve(
         inst, seed=seed, iters=iters, tune=tune,
         use_drone=use_drone, use_detour=use_detour,
         op_policy=_OP_POLICY, fixed_pair=_FIXED_PAIR,
+        interv_policy=pol, interv_every=_INTERV_EVERY,
     )
     cnt = state.counters()
     return {
@@ -97,6 +106,9 @@ def main() -> None:
                     choices=["adaptive", "uniform", "fixed"],
                     help="算子选择策略（诊断用；默认 adaptive = 论文的轮盘赌+权重）")
     ap.add_argument("--fixed-pair", default=None, help="op-policy=fixed 时的 '坏|修' 组合")
+    ap.add_argument("--interv", default="none", choices=["none", "random", "rule"],
+                    help="周期性有界干预的决策者（M9.6 对照；默认 none = 与历史逐位一致）")
+    ap.add_argument("--interv-every", type=int, default=50, help="每多少轮干预一次")
     ap.add_argument("--ml-screen", action="store_true",
                     help="启用 M9.1 候选预筛（默认关；关时与历史结果逐位一致）")
     args = ap.parse_args()
@@ -136,7 +148,8 @@ def main() -> None:
     n_done = 0
     try:
         with ProcessPoolExecutor(max_workers=workers, initializer=_init,
-                                 initargs=(args.ml_screen, args.op_policy, args.fixed_pair)) as pool:
+                                 initargs=(args.ml_screen, args.op_policy, args.fixed_pair,
+                                           args.interv, args.interv_every)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]
