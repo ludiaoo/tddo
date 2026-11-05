@@ -37,7 +37,7 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           fixed_pair: str | None = None, interv: str = "none",
           interv_every: int = 50, extra_destroy: str | None = None,
           accept: str = "sa", selector: str = "tier", degree: str = "uniform",
-          ucb_value: bool = False) -> None:
+          ucb_value: bool = False, drone_topk: int = 0) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -54,6 +54,9 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     _ACCEPT, _SELECTOR, _DEGREE = accept, selector, degree
     global _UCB_VALUE
     _UCB_VALUE = ucb_value
+    if drone_topk:                         # 无人机候选预筛（M9.9）
+        import src.operators as _ops
+        _ops.DRONE_TOPK = drone_topk
     if extra_destroy:                      # 把候选破坏算子并进算子池（M9.7）
         import importlib
         from src.operators import DESTROY
@@ -133,6 +136,8 @@ def main() -> None:
                     help="破坏度：uniform=U(10%%,40%%)（现状），big=6%% 概率大破坏（M9.8）")
     ap.add_argument("--ucb-value", action="store_true",
                     help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
+    ap.add_argument("--drone-topk", type=int, default=0,
+                    help="无人机候选预筛上限（0=全量，现状；M9.9）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -178,7 +183,7 @@ def main() -> None:
                                            args.interv, args.interv_every,
                                            args.extra_destroy,
                                            args.accept, args.selector, args.degree,
-                                           args.ucb_value)) as pool:
+                                           args.ucb_value, args.drone_topk)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

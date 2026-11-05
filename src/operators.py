@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from dataclasses import dataclass
 
@@ -25,6 +26,11 @@ from .ml.screen import LightGBMScreen
 from .solution import DEPOT, Route, Solution, route_from_specs, route_to_specs
 
 TOP_K = 6          # 粗排后真正做完整评估的候选数
+# 无人机候选的全局预筛上限（M9.9）。0 = 关闭，与历史行为逐位一致。
+# 背景：卡车侧一直有 TOP_K 粗排，无人机侧没有——100 客户时每个客户要构造并评估
+# 约 125 条 trial 路线，占单次求解 69% 的时间（cProfile，Set13）。
+DRONE_TOPK = int(os.environ.get("ALNS_DRONE_TOPK", "0"))
+_PROBE = None      # 诊断用：置为 list 时，把 (代理量, 真实Δcost) 追加进去（平时零开销）
 
 
 @dataclass
@@ -340,6 +346,8 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int, rng=None):
     （同一个循环骨架），否则 hit-rate 指标会失真。改这里时两个函数一起改。
     """
     mode = ml.get_mode()
+    if DRONE_TOPK > 0 and mode == "off":
+        return _drone_candidates_pruned(inst, sol, c)
     if mode == "screen":
         # 分级启用：小算例的单次评估本来就很便宜（且大量 memo 命中），
         # 打分的固定开销反而更贵——实测 Set9（50 客户）慢 13%，Set13（100 客户）快 9%。
@@ -347,6 +355,83 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int, rng=None):
         if inst.n_customers >= SCREEN_MIN_N:
             return _drone_candidates_screen(inst, sol, c, rng)
     return _drone_candidates_full(inst, sol, c, mode)
+
+
+def _drone_dist(inst: Instance, i: int, j: int) -> float:
+    """直线距离（不算绕行）。预筛只要单调可比的代理量，不值得为它跑绕行几何。"""
+    a, b = inst.base.nodes[i], inst.base.nodes[j]
+    return math.hypot(a.x - b.x, a.y - b.y)
+
+
+def _drone_candidates_pruned(inst: Instance, sol: Solution, c: int):
+    """与 `_drone_candidates_full` 同构，但在**构造 trial 之前**先粗排。
+
+    代理量：插入后该架次飞行长度的**增量**（直线距离，O(1)）。理由是卡车节点不变，
+    所以成本变化几乎全部来自架次时长的变化——这与 `_restricted` 的实际目标一致。
+
+    取法：全局前 K 名 + **每条路线各自的第一名**。后者是安全网——避免全局前 K 全落在
+    同一条路线上，导致其它路线一个候选都没试（卡车侧按路线取 TOP_K，天然没这个问题）。
+    """
+    if not inst.allow_drones:
+        return []
+    desc: list[tuple[float, int, int, int, int]] = []      # (proxy, idx, kind, i/k, pos)
+    for idx, r in enumerate(sol.routes):
+        specs = route_to_specs(r)
+        # ① 并入已有架次
+        for i, (p, q, cust) in enumerate(specs):
+            for pos in range(len(cust) + 1):
+                prev = cust[pos - 1] if pos > 0 else p
+                nxt = cust[pos] if pos < len(cust) else q
+                if c in cust:                             # 已在该架次里，跳过（与全量版一致由 _keeps_all 兜底）
+                    proxy = 1e18
+                else:
+                    proxy = (_drone_dist(inst, prev, c) + _drone_dist(inst, c, nxt)
+                             - _drone_dist(inst, prev, nxt))
+                desc.append((proxy, idx, 0, i, pos))
+        # ② 新建架次：相邻两节点作锚点
+        for k in range(len(r.nodes) - 1):
+            p, q = r.nodes[k], r.nodes[k + 1]
+            if p == DEPOT or q == DEPOT:
+                continue
+            if any((sp, sq) == (p, q) for sp, sq, _ in specs):
+                continue
+            desc.append((_drone_dist(inst, p, c) + _drone_dist(inst, c, q), idx, 1, k, 0))
+
+    if not desc:
+        return []
+    desc.sort(key=lambda t: t[0])
+    keep = {id(t) for t in desc[:DRONE_TOPK]}
+    best_per_route: dict[int, tuple] = {}
+    for t in desc:
+        best_per_route.setdefault(t[1], t)
+    keep |= {id(t) for t in best_per_route.values()}
+    shortlist = [t for t in desc if id(t) in keep]
+
+    before_cache = {i: _route_eval(inst, r) for i, r in enumerate(sol.routes)}
+    out = []
+    for proxy, idx, kind, pos_i, pos in shortlist:
+        r = sol.routes[idx]
+        specs = route_to_specs(r)
+        if kind == 0:
+            p, q, cust = specs[pos_i]
+            new_cust = cust[:pos] + (c,) + cust[pos:]
+            trial_specs = specs[:pos_i] + [(p, q, new_cust)] + specs[pos_i + 1:]
+        else:
+            p, q = r.nodes[pos_i], r.nodes[pos_i + 1]
+            trial_specs = specs + [(p, q, (c,))]
+        trial = route_from_specs(r.truck, r.nodes, trial_specs)
+        if not _keeps_all(r, trial, c):
+            continue
+        ok, cost = _route_eval(inst, trial)
+        if _PROBE is not None:                     # 诊断：连不可行的也记，才能量可行率
+            _PROBE.append((proxy, ok, (cost - before_cache[idx][1]) if ok else float("nan")))
+        if ok:
+            before_ok, before_cost = before_cache[idx]
+            if before_ok:
+                other = [x for j, x in enumerate(sol.routes) if j != idx]
+                out.append((cost - before_cost, Solution(other + [trial])))
+    out.sort(key=lambda x: x[0])
+    return out
 
 
 def _drone_candidates_full(inst: Instance, sol: Solution, c: int, mode: str):

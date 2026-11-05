@@ -410,7 +410,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 项目**没有单一入口**：`src/` 是可复用的模型与算法库（无副作用、无 CLI），`scripts/` 是实验驱动层，
 每一个都能 `python -m scripts.xxx` 单独跑。下表按「职责 → 关键入口 → 谁来调用」组织。
 
-### 8.1 `src/`（4464 行，18 个模块；另有 `src/ml/` 425 行 3 个模块）
+### 8.1 `src/`（4549 行，18 个模块；另有 `src/ml/` 425 行 3 个模块）
 
 | 模块 | 行 | 职责 | 关键入口 | 被谁用 |
 |---|---|---|---|---|
@@ -423,7 +423,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 | `cache.py` | 191 | 按算例缓存静态几何：节点→禁飞区表、点对绕行量、需求/时间窗/路网（转纯 Python 数组） | `GeometryCache.of(inst)` | `evaluator`、`operators` |
 | `solution.py` | 216 | 解的表示 + 锚点/下标双向转换 + 结构自检 + JSON 序列化 | `Route` `Sortie` `route_to_specs` `route_from_specs` `validate_structure` | `initial` `operators` `alns` `plot_routes` |
 | `initial.py` | 218 | 两阶段初始解；以及 `K` 的确定规则 | `build_initial` `slack_first_routes` `assign_sorties` `routes_needed_by_windows` `ordered_routes` | `alns` `pso` `sensitivity` |
-| `operators.py` | 624 | 4 个破坏 + 4 个修复算子，含 `_keeps_all` 完整性校验与候选粗排 | `DESTROY` `REPAIR` `remove_customers` `served_map` | `alns` |
+| `operators.py` | 709 | 4 个破坏 + 4 个修复算子，含 `_keeps_all` 完整性校验与候选粗排 | `DESTROY` `REPAIR` `remove_customers` `served_map` | `alns` |
 | `evaluator.py` | 307 | **模型的核心**：把解翻译成时刻表 + 载荷流 + 成本 + 违约清单 | `evaluate` `_simulate_route` `_fly_sortie` `RouteEval` | 所有需要判可行的地方 |
 | `alns.py` | 395 | ALNS 主循环（论文 Algorithm 1）+ 三个对照开关 + 温度标定 + 停滞扰动 | `solve` `disable_nfz` `disable_drones` `disable_detour` `_calibrate_t0` `_kick` | `bench` `sensitivity` `plot_routes` `run_milp` |
 | `milp.py` | 489 | Gurobi 精确解（不建模 NFZ，MTZ 消子环），解转回 `Solution` 后自检 | `solve_milp` `MilpResult` | `run_milp`、4 项慢测试 |
