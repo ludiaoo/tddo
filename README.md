@@ -410,7 +410,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 项目**没有单一入口**：`src/` 是可复用的模型与算法库（无副作用、无 CLI），`scripts/` 是实验驱动层，
 每一个都能 `python -m scripts.xxx` 单独跑。下表按「职责 → 关键入口 → 谁来调用」组织。
 
-### 8.1 `src/`（4 411 行，18 个模块；另有 `src/ml/` 425 行 3 个模块）
+### 8.1 `src/`（4464 行，18 个模块；另有 `src/ml/` 425 行 3 个模块）
 
 | 模块 | 行 | 职责 | 关键入口 | 被谁用 |
 |---|---|---|---|---|
@@ -425,7 +425,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 | `initial.py` | 218 | 两阶段初始解；以及 `K` 的确定规则 | `build_initial` `slack_first_routes` `assign_sorties` `routes_needed_by_windows` `ordered_routes` | `alns` `pso` `sensitivity` |
 | `operators.py` | 624 | 4 个破坏 + 4 个修复算子，含 `_keeps_all` 完整性校验与候选粗排 | `DESTROY` `REPAIR` `remove_customers` `served_map` | `alns` |
 | `evaluator.py` | 307 | **模型的核心**：把解翻译成时刻表 + 载荷流 + 成本 + 违约清单 | `evaluate` `_simulate_route` `_fly_sortie` `RouteEval` | 所有需要判可行的地方 |
-| `alns.py` | 342 | ALNS 主循环（论文 Algorithm 1）+ 三个对照开关 + 温度标定 + 停滞扰动 | `solve` `disable_nfz` `disable_drones` `disable_detour` `_calibrate_t0` `_kick` | `bench` `sensitivity` `plot_routes` `run_milp` |
+| `alns.py` | 395 | ALNS 主循环（论文 Algorithm 1）+ 三个对照开关 + 温度标定 + 停滞扰动 | `solve` `disable_nfz` `disable_drones` `disable_detour` `_calibrate_t0` `_kick` | `bench` `sensitivity` `plot_routes` `run_milp` |
 | `milp.py` | 489 | Gurobi 精确解（不建模 NFZ，MTZ 消子环），解转回 `Solution` 后自检 | `solve_milp` `MilpResult` | `run_milp`、4 项慢测试 |
 | `intervention.py` | 114 | 周期有界干预（M9.6）：动作空间 + 确定性校验器 + random/rule 两个决策者 | `validate` `random_policy` `rule_policy` `make_policy` | `bench --interv`、`tests/test_intervention.py` |
 | `nfz_ops.py` | 288 | M9.7 的 LLM 提案算子池（7 个禁飞区感知破坏算子），**默认不注册**，只作反例库与评测素材 | `CANDIDATES` | `eval_nfz_ops`、`bench --extra-destroy` |

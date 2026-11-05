@@ -27,11 +27,17 @@ _OP_POLICY = "adaptive"
 _FIXED_PAIR = None
 _INTERV = "none"
 _INTERV_EVERY = 50
+_ACCEPT = "sa"
+_SELECTOR = "tier"
+_DEGREE = "uniform"
+_UCB_VALUE = False
 
 
 def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           fixed_pair: str | None = None, interv: str = "none",
-          interv_every: int = 50, extra_destroy: str | None = None) -> None:
+          interv_every: int = 50, extra_destroy: str | None = None,
+          accept: str = "sa", selector: str = "tier", degree: str = "uniform",
+          ucb_value: bool = False) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -44,6 +50,10 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     _FIXED_PAIR = fixed_pair
     _INTERV = interv
     _INTERV_EVERY = interv_every
+    global _ACCEPT, _SELECTOR, _DEGREE
+    _ACCEPT, _SELECTOR, _DEGREE = accept, selector, degree
+    global _UCB_VALUE
+    _UCB_VALUE = ucb_value
     if extra_destroy:                      # 把候选破坏算子并进算子池（M9.7）
         import importlib
         from src.operators import DESTROY
@@ -67,6 +77,7 @@ def _run(task: tuple) -> dict:
         use_drone=use_drone, use_detour=use_detour,
         op_policy=_OP_POLICY, fixed_pair=_FIXED_PAIR,
         interv_policy=pol, interv_every=_INTERV_EVERY,
+        accept=_ACCEPT, selector=_SELECTOR, degree=_DEGREE, ucb_value=_UCB_VALUE,
     )
     cnt = state.counters()
     return {
@@ -114,6 +125,14 @@ def main() -> None:
     ap.add_argument("--interv", default="none", choices=["none", "random", "rule"],
                     help="周期性有界干预的决策者（M9.6 对照；默认 none = 与历史逐位一致）")
     ap.add_argument("--interv-every", type=int, default=50, help="每多少轮干预一次")
+    ap.add_argument("--accept", default="sa", choices=["sa", "rel"],
+                    help="接受准则：sa=绝对退火（现状），rel=相对劣化（M9.8）")
+    ap.add_argument("--selector", default="tier", choices=["tier", "ucb"],
+                    help="算子选择：tier=四档加分（现状），ucb=UCB1（M9.8）")
+    ap.add_argument("--degree", default="uniform", choices=["uniform", "big"],
+                    help="破坏度：uniform=U(10%%,40%%)（现状），big=6%% 概率大破坏（M9.8）")
+    ap.add_argument("--ucb-value", action="store_true",
+                    help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -157,7 +176,9 @@ def main() -> None:
         with ProcessPoolExecutor(max_workers=workers, initializer=_init,
                                  initargs=(args.ml_screen, args.op_policy, args.fixed_pair,
                                            args.interv, args.interv_every,
-                                           args.extra_destroy)) as pool:
+                                           args.extra_destroy,
+                                           args.accept, args.selector, args.degree,
+                                           args.ucb_value)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

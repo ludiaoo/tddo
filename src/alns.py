@@ -61,6 +61,24 @@ def _apply_bias(w: dict[str, float], bias: dict[str, float]) -> None:
             w[k] = max(WEIGHT_FLOOR, w[k] / mean)
 
 
+def _ucb_pick(rng, names, cnt: dict, rew: dict, t: int, c: float = 0.5) -> str:
+    """UCB1 式算子选择（M9.8）：未试过的优先，之后按「平均回报 + 探索奖励」。
+
+    动机来自 LLM 全组件进化那篇的代码分析：进化出来的选择器普遍用 UCB / softmax /
+    显式探索下限，而不是纯轮盘赌——防止少数高分算子过早垄断。
+    与现有四档加分制的区别：加分制只增不减、且没有"冷门算子还有多少没试"的概念。
+    """
+    for k in names:
+        if cnt[k] == 0:
+            return k
+    best, best_v = names[0], -1e18
+    for k in names:
+        v = rew[k] / cnt[k] + c * math.sqrt(math.log(t + 2) / cnt[k])
+        if v > best_v:
+            best, best_v = k, v
+    return best
+
+
 def _roulette(rng, weights: dict[str, float]) -> str:
     names = list(weights)
     w = np.array([max(weights[n], WEIGHT_FLOOR) for n in names], dtype=float)
@@ -161,6 +179,10 @@ def solve(
     init_sol=None,
     interv_policy=None,
     interv_every: int = 50,
+    accept: str = "sa",
+    selector: str = "tier",
+    degree: str = "uniform",
+    ucb_value: bool = False,
 ) -> ALNSResult:
     """ALNS 主循环。
 
@@ -214,6 +236,10 @@ def solve(
     history = [cur_cost]
     q_override = None                 # 干预设定的破坏比例目标，持续到下一次干预
     last_action = None
+    cnt_d = {k: 0 for k in DESTROY}   # UCB 用：各算子被选次数
+    cnt_r = {k: 0 for k in REPAIR}
+    rew_d = {k: 0.0 for k in DESTROY}  # UCB 用：累计回报
+    rew_r = {k: 0.0 for k in REPAIR}
 
     names_d, names_r = tuple(DESTROY), tuple(REPAIR)
 
@@ -252,12 +278,19 @@ def solve(
         elif op_policy == "uniform":
             dn = names_d[int(rng.integers(len(names_d)))]
             rn = names_r[int(rng.integers(len(names_r)))]
+        elif selector == "ucb":
+            dn = _ucb_pick(rng, names_d, cnt_d, rew_d, it)
+            rn = _ucb_pick(rng, names_r, cnt_r, rew_r, it)
         else:
             dn, rn = _roulette(rng, wd), _roulette(rng, wr)
         if q_override is not None:
             r = q_override
         elif ratio is not None:
             r = ratio
+        elif degree == "big":
+            # 非单调破坏度：小概率来一次「大破坏 + 随后重建」，模仿 restart
+            # （LLM 全组件进化那篇观察到的规律之一：有效控制不必单调收敛）
+            r = float(rng.uniform(0.50, 0.60)) if rng.random() < 0.06 else float(rng.uniform(0.10, 0.40))
         elif tune:
             r = float(rng.uniform(0.10, 0.40))
         else:
@@ -267,11 +300,25 @@ def solve(
 
         accepted = False
         status = "rejected"
+        step_reward = 0.0
         if cand is not None:
             cres, ccost = evaluate(inst, cand)
             if cres.feasible:
                 delta = ccost - cur_cost
-                if delta < 0 or rng.random() < np.exp(-delta / max(T, 1e-9)):
+                if accept == "rel":
+                    # 相对劣化：用 delta / 当前最优 与 T / 初始成本 的比值判接受。
+                    # 绝对阈值在不同量级的算例间不可比（我们跨 68–833），相对值可比。
+                    d_rel = delta / max(best_cost, 1e-9)
+                    t_rel = T / max(initial_cost, 1e-9)
+                    accept_ok = delta < 0 or rng.random() < np.exp(-d_rel / max(t_rel, 1e-9))
+                else:
+                    accept_ok = delta < 0 or rng.random() < np.exp(-delta / max(T, 1e-9))
+                if ucb_value:
+                    # 价值型回报：降幅 / 当前最优（无量纲）。与「状态档位」的区别是关键——
+                    # 档位奖励衡量的是"成功频次"，小步改进的成功率高但价值低，会被选爆
+                    # （本轮 UCB+档位奖励把 equal 修复从 50% 压到 5%，成本 +3.97%）。
+                    step_reward = max(0.0, -delta / max(best_cost, 1e-9))
+                if accept_ok:
                     sol, cur_cost = cand, ccost
                     accepted = True
                     if ccost < best_cost - 1e-9:
@@ -281,6 +328,12 @@ def solve(
                         status = "improve"
                     else:
                         status = "accepted"
+
+        if selector == "ucb":
+            reward = step_reward if ucb_value else {"best": 1.0, "improve": 0.5,
+                                                     "accepted": 0.2}.get(status, 0.0)
+            cnt_d[dn] += 1; rew_d[dn] += reward
+            cnt_r[rn] += 1; rew_r[rn] += reward
 
         # 四档打分（论文 §5）
         if status == "best":
