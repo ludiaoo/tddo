@@ -204,6 +204,7 @@ def solve(
     selector: str = "tier",
     degree: str = "uniform",
     ucb_value: bool = False,
+    polish: str = "off",
 ) -> ALNSResult:
     """ALNS 主循环。
 
@@ -356,6 +357,16 @@ def solve(
                     accepted = True
                     if ccost < best_cost - 1e-9:
                         best, best_cost = cand, ccost
+                        if polish in ("anchors", "anchors_cur"):
+                            # M9.13：刷新最优时做一次锚点平移。
+                            # anchors      = 只改 best（保守，但改进不会反馈进搜索）
+                            # anchors_cur  = 同时把当前解挪到平移后的更优点（标准做法）
+                            from .local_search import polish_anchors
+                            pbest, pcost = polish_anchors(inst, best)
+                            if pcost < best_cost - 1e-9:
+                                best, best_cost = pbest, pcost
+                                if polish == "anchors_cur":
+                                    sol, cur_cost = pbest, pcost
                         status = "best"
                     elif delta < 0:
                         status = "improve"

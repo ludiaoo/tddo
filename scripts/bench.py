@@ -31,6 +31,7 @@ _ACCEPT = "sa"
 _SELECTOR = "tier"
 _DEGREE = "uniform"
 _UCB_VALUE = False
+_POLISH = "off"
 
 
 def _init(ml_screen: bool = False, op_policy: str = "adaptive",
@@ -38,7 +39,7 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           interv_every: int = 50, extra_destroy: str | None = None,
           accept: str = "sa", selector: str = "tier", degree: str = "uniform",
           ucb_value: bool = False, drone_topk: int = 0,
-          drones_per_truck: int = 1) -> None:
+          drones_per_truck: int = 1, polish: str = "off") -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -53,6 +54,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     _FIXED_PAIR = fixed_pair
     _INTERV = interv
     _INTERV_EVERY = interv_every
+    global _POLISH
+    _POLISH = polish
     global _ACCEPT, _SELECTOR, _DEGREE
     _ACCEPT, _SELECTOR, _DEGREE = accept, selector, degree
     global _UCB_VALUE
@@ -84,6 +87,7 @@ def _run(task: tuple) -> dict:
         op_policy=_OP_POLICY, fixed_pair=_FIXED_PAIR,
         interv_policy=pol, interv_every=_INTERV_EVERY,
         accept=_ACCEPT, selector=_SELECTOR, degree=_DEGREE, ucb_value=_UCB_VALUE,
+        polish=_POLISH,
     )
     cnt = state.counters()
     return {
@@ -139,6 +143,8 @@ def main() -> None:
                     help="破坏度：uniform=U(10%%,40%%)（现状），big=6%% 概率大破坏（M9.8）")
     ap.add_argument("--ucb-value", action="store_true",
                     help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
+    ap.add_argument("--polish", default="off", choices=["off", "anchors", "anchors_cur"],
+                    help="局部搜索：刷新最优时做锚点平移（M9.13）")
     ap.add_argument("--drones-per-truck", type=int, default=1,
                     help="每车可同时在飞的架次数（1=论文原模型；M9.12 扩展）")
     ap.add_argument("--drone-topk", type=int, default=0,
@@ -189,7 +195,7 @@ def main() -> None:
                                            args.extra_destroy,
                                            args.accept, args.selector, args.degree,
                                            args.ucb_value, args.drone_topk,
-                                           args.drones_per_truck)) as pool:
+                                           args.drones_per_truck, args.polish)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

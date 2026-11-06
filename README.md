@@ -410,7 +410,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 项目**没有单一入口**：`src/` 是可复用的模型与算法库（无副作用、无 CLI），`scripts/` 是实验驱动层，
 每一个都能 `python -m scripts.xxx` 单独跑。下表按「职责 → 关键入口 → 谁来调用」组织。
 
-### 8.1 `src/`（4667 行，19 个模块；另有 `src/ml/` 425 行 3 个模块）
+### 8.1 `src/`（4768 行，20 个模块；另有 `src/ml/` 425 行 3 个模块）
 
 | 模块 | 行 | 职责 | 关键入口 | 被谁用 |
 |---|---|---|---|---|
@@ -429,6 +429,7 @@ ALNS 对照；每次求解都转回项目内的 `Solution` 用评估器复核目
 | `milp.py` | 489 | Gurobi 精确解（不建模 NFZ，MTZ 消子环），解转回 `Solution` 后自检 | `solve_milp` `MilpResult` | `run_milp`、4 项慢测试 |
 | `intervention.py` | 114 | 周期有界干预（M9.6）：动作空间 + 确定性校验器 + random/rule 两个决策者 | `validate` `random_policy` `rule_policy` `make_policy` | `bench --interv`、`tests/test_intervention.py` |
 | `nfz_ops.py` | 288 | M9.7 的 LLM 提案算子池（7 个禁飞区感知破坏算子），**默认不注册**，只作反例库与评测素材 | `CANDIDATES` | `eval_nfz_ops`、`bench --extra-destroy` |
+| `local_search.py` | 96 | 锚点平移（M9.13）：架次起降点四邻域下降式搜索 | `polish_anchors` | `alns(polish=...)` |
 | `qselect.py` | 85 | DQN 选算子的状态构造 + numpy 前向 + ε-贪心（M9.10） | `state_vector` `QNet` `ACTIONS` | `alns(selector="dqn")`、`train_dqn` |
 | `pso.py` | 190 | PSO 对照（random-key 编码 = 自造），预算口径「解码次数」 | `solve_pso` `decode` | `bench_pso` |
 | `visualizer.py` | 301 | 网络图与路线图：禁飞区、节点、仓库、卡车实线/无人机虚线、论文式图例 | `plot_network` `plot_solution` `attach_legend` `generic_route_legend_handles` | `plot_routes`、`python -m src.visualizer` |
