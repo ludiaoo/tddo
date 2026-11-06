@@ -37,10 +37,13 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           fixed_pair: str | None = None, interv: str = "none",
           interv_every: int = 50, extra_destroy: str | None = None,
           accept: str = "sa", selector: str = "tier", degree: str = "uniform",
-          ucb_value: bool = False, drone_topk: int = 0) -> None:
+          ucb_value: bool = False, drone_topk: int = 0,
+          drones_per_truck: int = 1) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
+    if drones_per_truck != 1:              # M9.12：放宽「每车 m 架机」
+        _CFG["fleet"]["drones_per_truck"] = drones_per_truck
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -136,6 +139,8 @@ def main() -> None:
                     help="破坏度：uniform=U(10%%,40%%)（现状），big=6%% 概率大破坏（M9.8）")
     ap.add_argument("--ucb-value", action="store_true",
                     help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
+    ap.add_argument("--drones-per-truck", type=int, default=1,
+                    help="每车可同时在飞的架次数（1=论文原模型；M9.12 扩展）")
     ap.add_argument("--drone-topk", type=int, default=0,
                     help="无人机候选预筛上限（0=全量，现状；M9.9）")
     ap.add_argument("--extra-destroy", default=None,
@@ -183,7 +188,8 @@ def main() -> None:
                                            args.interv, args.interv_every,
                                            args.extra_destroy,
                                            args.accept, args.selector, args.degree,
-                                           args.ucb_value, args.drone_topk)) as pool:
+                                           args.ucb_value, args.drone_topk,
+                                           args.drones_per_truck)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

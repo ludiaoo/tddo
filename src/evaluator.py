@@ -103,7 +103,9 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
 
     t = 0.0                      # 到达当前节点的时刻
     drone_arrival: dict[int, float] = {}   # 各架次的无人机抵达回收点时刻
-    busy_until: int | None = None          # 当前在飞架次的回收位置（每车只有一架无人机）
+    # 在飞架次的回收位置集合（M9.12：论文约束 20/21 限制每车 1 架，这里放宽为 m 架；
+    # m=1 时等价于原来的 busy_until，只是换成了集合表示）
+    active: list[int] = []
 
     for pos in range(len(nodes) - 1):
         i = nodes[pos]
@@ -119,7 +121,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             # 约束 (20)(21)(49)：一辆卡车只配一架无人机，上一个架次没回收就不能再起飞。
             # 缺这条检查时，评估器会允许「架次嵌套」——两个架次在同一段时间里各飞各的，
             # 成本被显著低估，而且 ALNS 会主动去找这种非法解（实测抓到过 Set1 的嵌套解）。
-            if pos in recover_at:
+            if p.drones_per_truck == 1 and pos in recover_at:
                 # 论文只用一个 w_i 表示「起飞或回收」，同一节点同时承担两件事时，
                 # 时刻递推 (23) 会拿卡车到达时刻当无人机起飞基准（此时机还没落地），
                 # 模型内部就不自洽。这里直接判不可行，与模型口径保持一致。
@@ -127,14 +129,15 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
                 ev.feasible = False
                 if fast:
                     return ev
-            if busy_until is not None and pos < busy_until:
+            if len(active) >= p.drones_per_truck:
                 ev.violations.append(
-                    f"{V_DRONE_BUSY} 位置{pos} 起飞时，上一架次（回收位置 {busy_until}）仍在飞行"
+                    f"{V_DRONE_BUSY} 位置{pos} 起飞时已有 {len(active)} 架在飞"
+                    f"（回收点 {sorted(active)}，上限 {p.drones_per_truck}）"
                 )
                 ev.feasible = False
                 if fast:
                     return ev
-            busy_until = s.recover
+            active.append(s.recover)
             t += p.launch_time
             t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev, g=g, fast=fast)
             if ok:
@@ -170,7 +173,8 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
 
         # --- 回收无人机：卡车必须等无人机到达 ---
         if r is not None:
-            busy_until = None                     # 无人机已回收，可以再次起飞
+            if (pos + 1) in active:               # 该架无人机已回收，腾出一个并行额度
+                active.remove(pos + 1)
             ta = drone_arrival.get(pos + 1)
             if ta is not None and ta > t:
                 ev.waiting_time += ta - t

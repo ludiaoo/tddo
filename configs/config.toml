@@ -13,6 +13,7 @@ truck_capacity_lb = 300.0         # [论文给定] §5
 launch_s = 60.0                   # [论文未给] 沿用 Murray & Raj (2020) §5.1
 recovery_s = 30.0                 # [论文未给] 同上
 service_s = 60.0                  # [论文未给] 无人机服务时间；卡车服务时间同取 60 s
+drones_per_truck = 1              # [扩展] 每车可同时在飞的架次数；论文约束 20/21 是 1，M9.12 可调
 
 [energy]
 # 式(39)：E = d · (e_drone · L + b)

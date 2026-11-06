@@ -125,6 +125,7 @@ class FleetParams:
     c_drone: float                # $/kWh
     c_truck: float                # $/L
     c_customer: float             # $/s
+    drones_per_truck: int = 1     # 每车可同时在飞的架次数（论文约束 20/21 是 1，M9.12 扩展为 m）
 
     @classmethod
     def from_config(cls, cfg: dict) -> "FleetParams":
@@ -144,6 +145,7 @@ class FleetParams:
             c_drone=float(cost["c_drone_per_kwh"]),
             c_truck=float(cost["c_truck_per_l"]),
             c_customer=float(cost["c_customer_per_s"]),
+            drones_per_truck=int(fleet.get("drones_per_truck", 1)),
         )
 
 
