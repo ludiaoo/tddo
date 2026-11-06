@@ -45,7 +45,9 @@ class RouteEval:
     drone_energy: float = 0.0
     finish_time: float = 0.0
     n_sorties: int = 0
-    waiting_time: float = 0.0
+    waiting_time: float = 0.0     # = wait_drone + wait_window（下面两项目前只用于诊断）
+    wait_drone: float = 0.0       # 卡车在回收点等无人机落地
+    wait_window: float = 0.0      # 卡车早到客户、等窗口开启
 
     def cost(self, inst: Instance) -> float:
         p = inst.params
@@ -172,6 +174,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             ta = drone_arrival.get(pos + 1)
             if ta is not None and ta > t:
                 ev.waiting_time += ta - t
+                ev.wait_drone += ta - t
                 t = ta
             t += p.recovery_time
             G += float(sum(map(g_list.__getitem__, r.customers)))
@@ -181,6 +184,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             we = g.tw_e[j - 1]
             if t < we:
                 ev.waiting_time += we - t
+                ev.wait_window += we - t
                 t = we
 
         # 卡车容量：派件 + 取件（约束 62）
