@@ -214,6 +214,10 @@ def build_instance(set_cfg: dict, cfg: dict) -> Instance:
 
     k_window = routes_needed_by_windows(inst)
     inst.n_trucks = int(max(n_trucks, k_window))
+    # [扩展，M9.14] 等资本对照用：多派 extra_trucks 辆车。默认 0 → 与原结果逐位一致。
+    extra = int(cfg.get("fleet_size", {}).get("extra_trucks", 0))
+    if extra:
+        inst.n_trucks += extra
     return inst
 
 

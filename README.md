@@ -470,6 +470,7 @@ scripts/bench.py
 | `probe_detour.py` | 179 | 时段覆盖率 × 半径 扫描，看增益能否被推高 | `probe_detour.csv` |
 | `probe_placement.py` | 210 | 禁飞圆「压客户点」vs「夹在两客户之间」对照 | `probe_placement.csv` |
 | `probe_operator.py` | 181 | 每轮「状态 + 选的算子对 + 结果」日志，估算子的条件成功率 | `ml/oplog*.csv.gz` |
+| `equal_capital.py` | 192 | 等资本对照：m=1/m=2/m=3 vs 多派一辆车；盈亏平衡、拐点、时效轴（M9.14） | 终端（读 `results/bench_*.csv`） |
 | `wait_diag.py` | 66 | 等待时间结构诊断：等无人机 vs 等窗口，及其价值上界（M9.11） | 终端 |
 | `train_dqn.py` | 163 | 离线 Fitted-Q Iteration 训练算子选择器（M9.10） | `models/dqn/q.json` |
 | `eval_nfz_ops.py` | 201 | LLM 提案算子的三关评测：契约校验 / 同状态配对 / 全程序 | `ml/nfz_ops_*.csv` |

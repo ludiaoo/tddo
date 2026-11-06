@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import copy
 
+import numpy as np
+
 from src.evaluator import V_DRONE_BUSY, V_LR_SAME, _simulate_route
 from src.generator import build_instance
 from src.io import load_config, load_sets
@@ -62,3 +64,23 @@ def test_same_node_launch_and_recover_allowed_only_with_two_drones() -> None:
 def test_default_is_still_one_drone() -> None:
     assert _inst(1).params.drones_per_truck == 1
     assert load_config()["fleet"].get("drones_per_truck", 1) == 1
+
+
+def test_extra_trucks_only_when_asked() -> None:
+    """等资本对照的开关：默认不加车（逐位一致的保证），显式加才生效。"""
+    import copy
+
+    from src.io import load_config, load_sets
+
+    by_id = {s["id"]: s for s in load_sets()}
+    cfg = load_config()
+    base = build_instance(by_id[5], cfg)
+    assert load_config()["fleet_size"].get("extra_trucks", 0) == 0
+
+    cfg2 = copy.deepcopy(cfg)
+    cfg2["fleet_size"]["extra_trucks"] = 1
+    more = build_instance(by_id[5], cfg2)
+    assert more.n_trucks == base.n_trucks + 1
+    # 除了车队规模，其它一切必须一致（同一个算例、同一批客户）
+    assert more.n_customers == base.n_customers
+    assert np.allclose(more.f, base.f)

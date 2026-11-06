@@ -34,17 +34,40 @@ _UCB_VALUE = False
 _POLISH = "off"
 
 
+def _meters(inst, sol) -> dict:
+    """最优解的时效与结构指标（每条路线重放一次，约毫秒级）。"""
+    from src.evaluator import _simulate_route
+
+    if sol is None:
+        return {}
+    fins, sorties, served = [], 0, 0
+    for rt in sol.routes:
+        ev = _simulate_route(inst, rt, fast=False)
+        fins.append(ev.finish_time)
+        sorties += ev.n_sorties
+        served += sum(len(x.customers) for x in rt.sorties)
+    return {
+        "makespan_s": round(max(fins) if fins else 0.0, 1),
+        "driver_h": round(sum(fins) / 3600.0, 3),
+        "n_sorties": int(sorties),
+        "drone_served": int(served),
+    }
+
+
 def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           fixed_pair: str | None = None, interv: str = "none",
           interv_every: int = 50, extra_destroy: str | None = None,
           accept: str = "sa", selector: str = "tier", degree: str = "uniform",
           ucb_value: bool = False, drone_topk: int = 0,
-          drones_per_truck: int = 1, polish: str = "off") -> None:
+          drones_per_truck: int = 1, polish: str = "off",
+          extra_trucks: int = 0) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
     if drones_per_truck != 1:              # M9.12：放宽「每车 m 架机」
         _CFG["fleet"]["drones_per_truck"] = drones_per_truck
+    if extra_trucks:                       # M9.14：等资本对照，多派几辆车
+        _CFG["fleet_size"]["extra_trucks"] = extra_trucks
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -105,6 +128,9 @@ def _run(task: tuple) -> dict:
         "t0": round(float(r.t0_used), 2),
         "restarts": int(r.restarts),
         "cpu_s": round(time.time() - t0, 2),
+        # 时效与结构指标（M9.14）：成本 = 司机工时 × 费率，所以成本降幅与
+        # 「工时总和」同源；makespan 是另一条价值轴（客户最晚收货时刻）。
+        **_meters(inst, r.best),
         "ml_attempts": cnt.get("attempts", 0),
         "ml_evals": cnt.get("evals", 0),
     }
@@ -114,6 +140,7 @@ FIELDS = [
     "set", "n_customers", "n_trucks", "seed", "iters", "tune",
     "use_drone", "use_detour", "initial_cost", "best_cost",
     "saving_pct", "t0", "restarts", "cpu_s", "ml_attempts", "ml_evals",
+    "makespan_s", "driver_h", "n_sorties", "drone_served",
 ]
 
 
@@ -145,6 +172,8 @@ def main() -> None:
                     help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
     ap.add_argument("--polish", default="off", choices=["off", "anchors", "anchors_cur"],
                     help="局部搜索：刷新最优时做锚点平移（M9.13）")
+    ap.add_argument("--extra-trucks", type=int, default=0,
+                    help="额外增加的卡车数（等资本对照用；M9.14）")
     ap.add_argument("--drones-per-truck", type=int, default=1,
                     help="每车可同时在飞的架次数（1=论文原模型；M9.12 扩展）")
     ap.add_argument("--drone-topk", type=int, default=0,
@@ -195,7 +224,8 @@ def main() -> None:
                                            args.extra_destroy,
                                            args.accept, args.selector, args.degree,
                                            args.ucb_value, args.drone_topk,
-                                           args.drones_per_truck, args.polish)) as pool:
+                                           args.drones_per_truck, args.polish,
+                                           args.extra_trucks)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]
