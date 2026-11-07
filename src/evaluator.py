@@ -48,6 +48,8 @@ class RouteEval:
     waiting_time: float = 0.0     # = wait_drone + wait_window（下面两项目前只用于诊断）
     wait_drone: float = 0.0       # 卡车在回收点等无人机落地
     wait_window: float = 0.0      # 卡车早到客户、等窗口开启
+    sortie_windows: list = None   # [起飞时刻, 落地时刻]，仅诊断用（M9.15）
+    hover_time: float = 0.0       # 无人机先到、卡车后到 → 无人机悬停等待的时长（仅诊断）
 
     def cost(self, inst: Instance) -> float:
         p = inst.params
@@ -121,7 +123,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             # 约束 (20)(21)(49)：一辆卡车只配一架无人机，上一个架次没回收就不能再起飞。
             # 缺这条检查时，评估器会允许「架次嵌套」——两个架次在同一段时间里各飞各的，
             # 成本被显著低估，而且 ALNS 会主动去找这种非法解（实测抓到过 Set1 的嵌套解）。
-            if p.drones_per_truck == 1 and pos in recover_at:
+            if p.drones_per_truck == 1 and not p.allow_hotswap and pos in recover_at:
                 # 论文只用一个 w_i 表示「起飞或回收」，同一节点同时承担两件事时，
                 # 时刻递推 (23) 会拿卡车到达时刻当无人机起飞基准（此时机还没落地），
                 # 模型内部就不自洽。这里直接判不可行，与模型口径保持一致。
@@ -143,6 +145,10 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             if ok:
                 drone_arrival[s.recover] = t_d
                 ev.drone_energy += energy
+                if not fast:
+                    if ev.sortie_windows is None:
+                        ev.sortie_windows = []
+                    ev.sortie_windows.append((t, t_d))
             # 无人机带走它负责的派件，卡车账上直接扣掉（约束 56/57）
             F -= float(sum(map(f_list.__getitem__, s.customers)))
             ev.n_sorties += 1
@@ -176,6 +182,8 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             if (pos + 1) in active:               # 该架无人机已回收，腾出一个并行额度
                 active.remove(pos + 1)
             ta = drone_arrival.get(pos + 1)
+            if ta is not None and ta < t:
+                ev.hover_time += t - ta     # 机器先到、卡车后到：悬停（模型不计能耗）
             if ta is not None and ta > t:
                 ev.waiting_time += ta - t
                 ev.wait_drone += ta - t

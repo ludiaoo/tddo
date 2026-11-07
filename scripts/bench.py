@@ -60,7 +60,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           accept: str = "sa", selector: str = "tier", degree: str = "uniform",
           ucb_value: bool = False, drone_topk: int = 0,
           drones_per_truck: int = 1, polish: str = "off",
-          extra_trucks: int = 0) -> None:
+          extra_trucks: int = 0, hotswap: bool = False,
+          sortie_span: int = 1) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -68,6 +69,11 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
         _CFG["fleet"]["drones_per_truck"] = drones_per_truck
     if extra_trucks:                       # M9.14：等资本对照，多派几辆车
         _CFG["fleet_size"]["extra_trucks"] = extra_trucks
+    if hotswap:                            # M9.15：允许同节点先回收再起飞（零资本放松）
+        _CFG["fleet"]["allow_hotswap"] = True
+    if sortie_span != 1:                   # M9.15：新建架次可跨多段锚点（解锁并行）
+        import src.operators as _ops
+        _ops.SORTIE_SPAN = sortie_span
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -172,6 +178,10 @@ def main() -> None:
                     help="UCB 用「降幅」而非「成功档位」当回报（配合 --selector ucb）")
     ap.add_argument("--polish", default="off", choices=["off", "anchors", "anchors_cur"],
                     help="局部搜索：刷新最优时做锚点平移（M9.13）")
+    ap.add_argument("--sortie-span", type=int, default=1,
+                    help="新建架次可跨越的卡车路段数（1=历史行为；M9.15 解锁并行）")
+    ap.add_argument("--hotswap", action="store_true",
+                    help="允许同节点先回收再起飞（M9.15，零资本放松；默认关闭）")
     ap.add_argument("--extra-trucks", type=int, default=0,
                     help="额外增加的卡车数（等资本对照用；M9.14）")
     ap.add_argument("--drones-per-truck", type=int, default=1,
@@ -225,7 +235,9 @@ def main() -> None:
                                            args.accept, args.selector, args.degree,
                                            args.ucb_value, args.drone_topk,
                                            args.drones_per_truck, args.polish,
-                                           args.extra_trucks)) as pool:
+                                           args.extra_trucks,
+                                           args.hotswap,
+                                           args.sortie_span)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

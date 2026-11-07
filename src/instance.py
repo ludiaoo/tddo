@@ -126,6 +126,9 @@ class FleetParams:
     c_truck: float                # $/L
     c_customer: float             # $/s
     drones_per_truck: int = 1     # 每车可同时在飞的架次数（论文约束 20/21 是 1，M9.12 扩展为 m）
+    allow_hotswap: bool = False   # 允许「同节点先回收再起飞」（M9.15：论文用单个 w_i 把两件事
+                                  # 合并成一个 0-1 变量，导致同一节点不能既降落又起飞；
+                                  # 物理上无人机落地、换电池、再起飞是常规操作）
 
     @classmethod
     def from_config(cls, cfg: dict) -> "FleetParams":
@@ -146,6 +149,7 @@ class FleetParams:
             c_truck=float(cost["c_truck_per_l"]),
             c_customer=float(cost["c_customer_per_s"]),
             drones_per_truck=int(fleet.get("drones_per_truck", 1)),
+            allow_hotswap=bool(fleet.get("allow_hotswap", False)),
         )
 
 

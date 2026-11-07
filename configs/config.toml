@@ -14,6 +14,7 @@ launch_s = 60.0                   # [论文未给] 沿用 Murray & Raj (2020) §
 recovery_s = 30.0                 # [论文未给] 同上
 service_s = 60.0                  # [论文未给] 无人机服务时间；卡车服务时间同取 60 s
 drones_per_truck = 1              # [扩展] 每车可同时在飞的架次数；论文约束 20/21 是 1，M9.12 可调
+allow_hotswap = false             # [扩展] 同节点先回收再起飞（M9.15）；论文用单个 w_i 禁掉了它
 
 [energy]
 # 式(39)：E = d · (e_drone · L + b)

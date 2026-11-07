@@ -30,6 +30,12 @@ TOP_K = 6          # 粗排后真正做完整评估的候选数
 # 背景：卡车侧一直有 TOP_K 粗排，无人机侧没有——100 客户时每个客户要构造并评估
 # 约 125 条 trial 路线，占单次求解 69% 的时间（cProfile，Set13）。
 DRONE_TOPK = int(os.environ.get("ALNS_DRONE_TOPK", "0"))
+# 新建架次允许跨越的卡车路段数（M9.15）。1 = 只允许相邻两节点（历史行为）。
+#
+# 为什么这个参数是「并行」的关键：原实现的新建架次只取 (k, k+1)，也就是**一段**。
+# 两个一段的架次在时间上最多首尾相接，永远不可能真正重叠——而 m≥2 的全部价值
+# 恰恰来自重叠。允许 (k, k+d) 之后，卡车走多段、无人机飞一段，两架才有机会同时在飞。
+SORTIE_SPAN = max(1, int(os.environ.get("ALNS_SORTIE_SPAN", "1")))
 _PROBE = None      # 诊断用：置为 list 时，把 (代理量, 真实Δcost) 追加进去（平时零开销）
 
 
@@ -357,6 +363,22 @@ def _drone_candidates(inst: Instance, sol: Solution, c: int, rng=None):
     return _drone_candidates_full(inst, sol, c, mode)
 
 
+def _anchor_pairs(route: Route):
+    """枚举新建架次可用的 (位置k, 起飞节点, 回收节点)。
+
+    `SORTIE_SPAN=1` 时与历史实现完全一致（只取相邻两节点）；>1 时允许跨 d 段。
+    """
+    nodes = route.nodes
+    for k in range(len(nodes) - 1):
+        if nodes[k] == DEPOT:
+            continue
+        for d in range(1, SORTIE_SPAN + 1):
+            k2 = k + d
+            if k2 >= len(nodes) or nodes[k2] == DEPOT:
+                continue
+            yield k, nodes[k], nodes[k2]
+
+
 def _drone_dist(inst: Instance, i: int, j: int) -> float:
     """直线距离（不算绕行）。预筛只要单调可比的代理量，不值得为它跑绕行几何。"""
     a, b = inst.base.nodes[i], inst.base.nodes[j]
@@ -388,11 +410,8 @@ def _drone_candidates_pruned(inst: Instance, sol: Solution, c: int):
                     proxy = (_drone_dist(inst, prev, c) + _drone_dist(inst, c, nxt)
                              - _drone_dist(inst, prev, nxt))
                 desc.append((proxy, idx, 0, i, pos))
-        # ② 新建架次：相邻两节点作锚点
-        for k in range(len(r.nodes) - 1):
-            p, q = r.nodes[k], r.nodes[k + 1]
-            if p == DEPOT or q == DEPOT:
-                continue
+        # ② 新建架次：锚点对（可跨段）
+        for k, p, q in _anchor_pairs(r):
             if any((sp, sq) == (p, q) for sp, sq, _ in specs):
                 continue
             desc.append((_drone_dist(inst, p, c) + _drone_dist(inst, c, q), idx, 1, k, 0))
@@ -484,11 +503,8 @@ def _drone_candidates_full(inst: Instance, sol: Solution, c: int, mode: str):
                     new_sol = Solution([x for j, x in enumerate(sol.routes) if j != idx] + [trial])
                     out.append((cost - before_cost, new_sol))
 
-        # ② 新建架次：卡车路径上相邻两节点作锚点（仓库除外）
-        for k in range(len(r.nodes) - 1):
-            p, q = r.nodes[k], r.nodes[k + 1]
-            if p == DEPOT or q == DEPOT:
-                continue
+        # ② 新建架次：卡车路径上取锚点（仓库除外）
+        for k, p, q in _anchor_pairs(r):
             if any((sp, sq) == (p, q) for sp, sq, _ in specs):
                 continue
             trial = route_from_specs(r.truck, r.nodes, specs + [(p, q, (c,))])
