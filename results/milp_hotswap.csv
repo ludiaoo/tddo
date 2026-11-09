@@ -1,0 +1,5 @@
+set,n_customers,n_trucks,base_cost,base_bound,base_gap_pct,base_status,hotswap_cost,hotswap_bound,hotswap_gap_pct,hotswap_status,delta_pct,eval_note
+1,10,3,98.724,94.2472,4.5346,time limit,98.724,94.2437,4.5382,time limit,0.0,✓ 可行
+2,10,2,115.9189,115.9189,0.0,optimal,115.9189,115.9189,0.0,optimal,0.0,✓ 可行
+3,10,2,67.7647,67.7647,0.0,optimal,67.7647,67.7647,0.0,optimal,0.0,✓ 可行
+4,10,2,73.3771,73.3771,0.0,optimal,73.3771,73.3771,0.0,optimal,0.0,✓ 可行

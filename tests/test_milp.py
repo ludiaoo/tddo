@@ -65,3 +65,26 @@ def test_全卡车模式与truck_only对照一致(inst):
 def test_要求禁飞区时必须报错(inst):
     with pytest.raises(ValueError):
         solve_milp(build_instance(SETS[0], CFG), time_limit=10.0)
+
+
+def test_钉解检验能识别换电解(inst, milp):
+    """M9.16 的核心工具：把外部解钉进 MILP 判可行性。
+
+    两条断言：
+    1. MILP 自己的解钉回去必须可行（否则 `_pin` 的映射有 bug）；
+    2. 换电解钉进**原模型**必须不可行——它只违反 `lr_once`，这正是「论文可行域少了那个点」的证据。
+    """
+    from copy import deepcopy
+
+    from src.alns import disable_nfz as _off
+
+    ok = solve_milp(inst, time_limit=60.0, fix=milp.solution)
+    assert ok.status == "optimal", "MILP 自己的解钉回去竟然不可行 → _pin 映射有 bug"
+
+    cfg_hot = deepcopy(CFG)
+    cfg_hot["fleet"]["allow_hotswap"] = True
+    hot = _off(build_instance(SETS[0], cfg_hot))
+    best = min((solve(hot, seed=s, iters=800) for s in range(3)),
+               key=lambda r: float(r.best_cost)).best
+    bad = solve_milp(hot, time_limit=20.0, allow_hotswap=False, fix=best)
+    assert bad.solution is None, "换电解在原模型里居然可行 → 说明它没用到换机，断言无意义"

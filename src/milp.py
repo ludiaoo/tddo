@@ -63,7 +63,10 @@ def solve_milp(
     mip_gap: float = 0.0,
     verbose: bool = False,
     allow_drone: bool = True,
+    allow_hotswap: bool = False,
+    fix: Solution | None = None,
 ) -> MilpResult:
+    """`fix` 给定时把全部二元变量钉死到该解，只做**可行性校验**（M9.16 的诊断用）。"""
     """求解简化 MILP。`inst.nfz` 必须为空（禁飞区不在本模型内）。"""
     if inst.nfz:
         raise ValueError("MILP 版本不建模禁飞区，请先用 disable_nfz(inst)")
@@ -166,12 +169,28 @@ def solve_milp(
                 == wl[k, i] - wr[k, i],
                 name=f"drone_flow_{k}_{i}",
             )
-            m.addConstr(wl[k, i] + wr[k, i] <= 1, name=f"lr_once_{k}_{i}")
-            m.addConstr(
-                wl[k, i] + wr[k, i] <= gp.quicksum(x[k, j, i] for j in V if j != i),
-                name=f"lr_truck_visit_{k}_{i}",
-            )
-            m.addConstr(Td[k, i] <= M_TIME * (1 - wl[k, i]), name=f"Td_zero_at_launch_{k}_{i}")
+            # ⚠ M9.16：`lr_once` 是「同一节点不能既回收又起飞」的唯一来源——论文用单个
+            # 二元变量 w_i 表示这两件事，天生表达不了「落地换电再起飞」。放开它（allow_hotswap）
+            # 之后要同时改三处，否则模型要么不可行、要么把换电的时间成本抹掉：
+            #   ① 卡车到访判据从 ≤1 改成 ≤1+Σx（一个节点可同时承担两件事）；
+            #   ② Td 在「纯起飞点」清零，但热换点要保留落地时刻，否则 Tt 等不到机；
+            #   ③ 起飞时刻仍从 Tt 递推，所以换电的时间成本由 Tt_wait_drone + launch_time 承担。
+            if allow_hotswap:
+                m.addConstr(
+                    wl[k, i] + wr[k, i] <= 1 + gp.quicksum(x[k, j, i] for j in V if j != i),
+                    name=f"lr_truck_visit_{k}_{i}",
+                )
+                m.addConstr(
+                    Td[k, i] <= M_TIME * (1 - wl[k, i] + wr[k, i]),
+                    name=f"Td_zero_at_launch_{k}_{i}",
+                )
+            else:
+                m.addConstr(wl[k, i] + wr[k, i] <= 1, name=f"lr_once_{k}_{i}")
+                m.addConstr(
+                    wl[k, i] + wr[k, i] <= gp.quicksum(x[k, j, i] for j in V if j != i),
+                    name=f"lr_truck_visit_{k}_{i}",
+                )
+                m.addConstr(Td[k, i] <= M_TIME * (1 - wl[k, i]), name=f"Td_zero_at_launch_{k}_{i}")
             m.addConstr(fa[k, i] <= M_LOAD * (1 - wr[k, i]), name=f"fa_zero_at_recover_{k}_{i}")
             # 拾取量只在「无人机到过这个点」时才可能非零（不是只在回收点）。
             # 初版写成 ga ≤ M·wr，等于禁止无人机途中收货，模型直接不可行。
@@ -396,11 +415,22 @@ def solve_milp(
         GRB.MINIMIZE,
     )
 
+    if fix is not None:
+        _pin(m, fix, inst, x, y, wl, wr)
+        m.setObjective(0.0, GRB.MINIMIZE)      # 只判可行，不看目标
+
     t0 = time.time()
     m.optimize()
     cpu = time.time() - t0
 
     if m.SolCount == 0:
+        if fix is not None:                    # 诊断：哪几条约束与「固定解」冲突
+            try:
+                m.computeIIS()
+                bad = [c.ConstrName for c in m.getConstrs() if c.IISConstr]
+                print(f"  [IIS] 冲突约束 {len(bad)} 条：{bad[:8]}")
+            except Exception as exc:           # noqa: BLE001
+                print(f"  [IIS] 计算失败：{exc}")
         return MilpResult(float("nan"), float("nan"), float("nan"), cpu, f"no solution(status={m.Status})",
                           None, m.NumVars, m.NumConstrs)
 
@@ -427,6 +457,35 @@ def solve_milp(
         n_cons=m.NumConstrs,
         breakdown=breakdown,
     )
+
+
+def _pin(m, sol: Solution, inst: Instance, x, y, wl, wr) -> None:
+    """把 `sol` 钉进模型：路径弧、无人机弧、起降标志全部取定值，其余二元变量置 0。
+
+    用途：验证「我们的启发式解在 MILP 的约束下到底可不可行」。若不可行，
+    `computeIIS` 能直接指出是时间、载荷还是能耗的哪一条被违反。
+    """
+    keep_x, keep_y, keep_l, keep_r = set(), set(), set(), set()
+    for r in sol.routes:
+        k = r.truck
+        for a, b in zip(r.nodes, r.nodes[1:]):
+            keep_x.add((k, a, b))
+        for s in r.sorties:
+            p, q = r.nodes[s.launch], r.nodes[s.recover]
+            keep_l.add((k, p))
+            keep_r.add((k, q))
+            chain = [p, *s.customers, q]
+            for a, b in zip(chain, chain[1:]):
+                keep_y.add((k, a, b))
+
+    for key, var in x.items():
+        m.addConstr(var == (1.0 if key in keep_x else 0.0), name=f"fix_x_{key[0]}_{key[1]}_{key[2]}")
+    for key, var in y.items():
+        m.addConstr(var == (1.0 if key in keep_y else 0.0), name=f"fix_y_{key[0]}_{key[1]}_{key[2]}")
+    for key, var in wl.items():
+        m.addConstr(var == (1.0 if key in keep_l else 0.0), name=f"fix_wl_{key[0]}_{key[1]}")
+    for key, var in wr.items():
+        m.addConstr(var == (1.0 if key in keep_r else 0.0), name=f"fix_wr_{key[0]}_{key[1]}")
 
 
 def _val(v: dict, key, tol: float = 0.5) -> bool:
