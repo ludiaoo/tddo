@@ -1,0 +1,10 @@
+comparison,label,free_mean_pct,free_n_better,hover_mean_pct,hover_n_better,n_pairs
+span3_vs_span1,m=1：跨段锚点 vs 相邻锚点,0.267,19,1.077,11,30
+hsspan3_vs_hs,换电：跨段锚点 vs 相邻锚点,-0.71,18,0.862,19,30
+m2span3_vs_m2,m=2：跨段锚点 vs 相邻锚点,-2.399,25,-0.618,17,30
+price_span1,span1：计电 vs 免费,0.0,0,1.84,9,30
+price_span3,span3：计电 vs 免费,0.0,0,2.684,6,30
+price_hs,hs：计电 vs 免费,0.0,0,2.896,6,30
+price_hs_span3,hs_span3：计电 vs 免费,0.0,0,4.477,5,30
+price_m2,m2：计电 vs 免费,0.0,0,3.641,6,30
+price_m2_span3,m2_span3：计电 vs 免费,0.0,0,5.463,1,30

@@ -40,17 +40,21 @@ def _meters(inst, sol) -> dict:
 
     if sol is None:
         return {}
-    fins, sorties, served = [], 0, 0
+    fins, sorties, served, hover_s, hover_kwh = [], 0, 0, 0.0, 0.0
     for rt in sol.routes:
         ev = _simulate_route(inst, rt, fast=False)
         fins.append(ev.finish_time)
         sorties += ev.n_sorties
         served += sum(len(x.customers) for x in rt.sorties)
+        hover_s += ev.hover_time
+        hover_kwh += ev.hover_energy
     return {
         "makespan_s": round(max(fins) if fins else 0.0, 1),
         "driver_h": round(sum(fins) / 3600.0, 3),
         "n_sorties": int(sorties),
         "drone_served": int(served),
+        "hover_min": round(hover_s / 60.0, 2),      # B 项：悬停时长与悬停耗电（诊断与校验用）
+        "hover_kwh": round(hover_kwh, 5),
     }
 
 
@@ -61,7 +65,7 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           ucb_value: bool = False, drone_topk: int = 0,
           drones_per_truck: int = 1, polish: str = "off",
           extra_trucks: int = 0, hotswap: bool = False,
-          sortie_span: int = 1) -> None:
+          sortie_span: int = 1, hover_power_kw: float = 0.0) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -74,6 +78,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
     if sortie_span != 1:                   # M9.15：新建架次可跨多段锚点（解锁并行）
         import src.operators as _ops
         _ops.SORTIE_SPAN = sortie_span
+    if hover_power_kw > 0.0:               # B 项：悬停计电（默认 0 = 论文口径）
+        _CFG["energy"]["hover_power_kw"] = hover_power_kw
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -147,6 +153,7 @@ FIELDS = [
     "use_drone", "use_detour", "initial_cost", "best_cost",
     "saving_pct", "t0", "restarts", "cpu_s", "ml_attempts", "ml_evals",
     "makespan_s", "driver_h", "n_sorties", "drone_served",
+    "hover_min", "hover_kwh",
 ]
 
 
@@ -188,6 +195,8 @@ def main() -> None:
                     help="每车可同时在飞的架次数（1=论文原模型；M9.12 扩展）")
     ap.add_argument("--drone-topk", type=int, default=0,
                     help="无人机候选预筛上限（0=全量，现状；M9.9）")
+    ap.add_argument("--hover-power", type=float, default=0.0,
+                    help="悬停功率 kW（0=论文口径，悬停不计电；B 项建议 0.45）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -237,7 +246,8 @@ def main() -> None:
                                            args.drones_per_truck, args.polish,
                                            args.extra_trucks,
                                            args.hotswap,
-                                           args.sortie_span)) as pool:
+                                           args.sortie_span,
+                                           args.hover_power)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

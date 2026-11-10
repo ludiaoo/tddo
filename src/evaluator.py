@@ -49,7 +49,11 @@ class RouteEval:
     wait_drone: float = 0.0       # 卡车在回收点等无人机落地
     wait_window: float = 0.0      # 卡车早到客户、等窗口开启
     sortie_windows: list = None   # [起飞时刻, 落地时刻]，仅诊断用（M9.15）
-    hover_time: float = 0.0       # 无人机先到、卡车后到 → 无人机悬停等待的时长（仅诊断）
+    hover_time: float = 0.0       # 悬停总时长 = hover_recov + hover_window
+    hover_recov: float = 0.0      # 回收点上方等卡车
+    hover_window: float = 0.0     # 客户点上方等时间窗开启
+    hover_energy: float = 0.0     # 上述悬停消耗的电量（kWh）。`e_hover=0` 时恒为 0，
+                                  # 此时与论文式(39)「只按距离计电」的口径逐位一致（B 项）
 
     def cost(self, inst: Instance) -> float:
         p = inst.params
@@ -105,6 +109,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
 
     t = 0.0                      # 到达当前节点的时刻
     drone_arrival: dict[int, float] = {}   # 各架次的无人机抵达回收点时刻
+    sortie_energy: dict[int, float] = {}   # 各架次「落地前」的累计能耗（B 项：用于悬停后复核 SOC）
     # 在飞架次的回收位置集合（M9.12：论文约束 20/21 限制每车 1 架，这里放宽为 m 架；
     # m=1 时等价于原来的 busy_until，只是换成了集合表示）
     active: list[int] = []
@@ -145,6 +150,7 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
             if ok:
                 drone_arrival[s.recover] = t_d
                 ev.drone_energy += energy
+                sortie_energy[s.recover] = energy
                 if not fast:
                     if ev.sortie_windows is None:
                         ev.sortie_windows = []
@@ -183,7 +189,27 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
                 active.remove(pos + 1)
             ta = drone_arrival.get(pos + 1)
             if ta is not None and ta < t:
-                ev.hover_time += t - ta     # 机器先到、卡车后到：悬停（模型不计能耗）
+                # 机器先到、卡车后到：无人机在回收点上方悬停等卡车。
+                # 论文式(39) 只按飞行距离计电，悬停是**零成本**的；跨段锚点（C9）的收益
+                # 有相当一部分正是从这个漏洞里来的，所以 B 项把它显式计价。
+                # `e_hover=0`（默认）时下面整段不执行，与历史结果逐位一致。
+                hold = t - ta
+                ev.hover_recov += hold
+                ev.hover_time += hold
+                if p.e_hover > 0.0:
+                    e_hold = hold * p.e_hover
+                    ev.hover_energy += e_hold
+                    ev.drone_energy += e_hold
+                    # 悬停发生在**落地之前**，所以要并进本架次重新核 SOC（约束 43）
+                    used = sortie_energy.get(pos + 1, 0.0) + e_hold
+                    if used > p.eta_soc * p.drone_battery + 1e-9:
+                        ev.violations.append(
+                            f"{V_SOC} 架次@{pos+1} 含悬停 {used:.3f}kWh > "
+                            f"{p.eta_soc * p.drone_battery:.3f}kWh"
+                        )
+                        ev.feasible = False
+                        if fast:
+                            return ev
             if ta is not None and ta > t:
                 ev.waiting_time += ta - t
                 ev.wait_drone += ta - t
@@ -272,9 +298,18 @@ def _fly_sortie(
                 if fast:
                     return t, energy, ok
             we = g.tw_e[c - 1]
-            if t < we:                  # 早到则悬停等待（不计能耗，见该节注释）
-                ev.waiting_time += we - t
+            if t < we:                  # 早到则悬停等待客户窗口开启
+                hold = we - t
+                ev.waiting_time += hold
                 t = we
+                # 这一段的悬停**一律记账**（诊断口径），是否计电由 e_hover 决定。
+                # B 项的关键发现就藏在这两行：在自造时间窗下，窗口悬停比回收点悬停大一个量级。
+                ev.hover_window += hold
+                ev.hover_time += hold
+                if p.e_hover > 0.0:
+                    e_hold = hold * p.e_hover
+                    ev.hover_energy += e_hold
+                    energy += e_hold
             payload_f -= f_list[c]
             payload_g += g_list[c]
             if payload_f + payload_g > p.drone_capacity + 1e-9:

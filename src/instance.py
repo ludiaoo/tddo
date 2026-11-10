@@ -129,6 +129,8 @@ class FleetParams:
     allow_hotswap: bool = False   # 允许「同节点先回收再起飞」（M9.15：论文用单个 w_i 把两件事
                                   # 合并成一个 0-1 变量，导致同一节点不能既降落又起飞；
                                   # 物理上无人机落地、换电池、再起飞是常规操作）
+    e_hover: float = 0.0          # 悬停功率换算后的单位时间能耗，kWh/s（B 项；默认为 0，
+                                  # 即「与历史结果逐位一致」——论文式(39) 只按飞行距离计电）
 
     @classmethod
     def from_config(cls, cfg: dict) -> "FleetParams":
@@ -150,6 +152,8 @@ class FleetParams:
             c_customer=float(cost["c_customer_per_s"]),
             drones_per_truck=int(fleet.get("drones_per_truck", 1)),
             allow_hotswap=bool(fleet.get("allow_hotswap", False)),
+            # 悬停能耗：配置里用「千瓦」书写（人更容易判断量级），入口处换成 kWh/s
+            e_hover=float(energy.get("hover_power_kw", 0.0)) / 3600.0,
         )
 
 
