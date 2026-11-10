@@ -1,0 +1,2 @@
+set,n_customers,n_trucks,seed,iters,tune,use_drone,use_detour,initial_cost,best_cost,saving_pct,t0,restarts,cpu_s,ml_attempts,ml_evals,makespan_s,driver_h,n_sorties,drone_served,hover_min,hover_kwh
+5,25,4,0,300,1,1,1,450.7468,223.8866,50.33,33.13,0,1.77,0,0,14702.8,5.729,4,9,35.78,0.0

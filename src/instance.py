@@ -131,6 +131,13 @@ class FleetParams:
                                   # 物理上无人机落地、换电池、再起飞是常规操作）
     e_hover: float = 0.0          # 悬停功率换算后的单位时间能耗，kWh/s（B 项；默认为 0，
                                   # 即「与历史结果逐位一致」——论文式(39) 只按飞行距离计电）
+    # ---- E 项：电池库存与重量（W2 最小版）----
+    # 每车出车时带几块**备用**电池。一台无人机自带的电池算一块，所以一条路线最多能飞
+    # `spare_batteries + drones_per_truck` 个架次（每换一次电消耗一块备用）。
+    # `-1` = 不限（论文口径：每飞一次就凭空换上一块满电电池），历史结果逐位不变。
+    spare_batteries: int = -1
+    battery_mass_kg: float = 0.0  # 单块电池质量（kg）。只在给了 spare_batteries 时计入卡车载荷
+                                  # （车顶挂架放满再出发，用没用到都占重量）
 
     @classmethod
     def from_config(cls, cfg: dict) -> "FleetParams":
@@ -154,6 +161,8 @@ class FleetParams:
             allow_hotswap=bool(fleet.get("allow_hotswap", False)),
             # 悬停能耗：配置里用「千瓦」书写（人更容易判断量级），入口处换成 kWh/s
             e_hover=float(energy.get("hover_power_kw", 0.0)) / 3600.0,
+            spare_batteries=int(fleet.get("spare_batteries", -1)),
+            battery_mass_kg=float(fleet.get("battery_mass_kg", 0.0)),
         )
 
 

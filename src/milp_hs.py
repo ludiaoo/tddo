@@ -70,6 +70,11 @@ def solve_milp_hs(
     dd_km = np.sqrt(((xy[:, None, :] - xy[None, :, :]) ** 2).sum(axis=-1)) / 1000.0
     td_s = dd_km * 1000.0 / p.drone_speed
 
+    # E 项：车顶挂架上的备用电池占卡车载荷（出车即占，用没用到都一样）。
+    # `spare_batteries < 0`（默认）时不生效，与原模型的载重口径完全一致。
+    batt_mass = (p.spare_batteries * p.battery_mass_kg) if p.spare_batteries >= 0 else 0.0
+    cap_eff = p.truck_capacity - batt_mass
+
     sv = {i: (p.service_time if i in C else 0.0) for i in V}
     e_win = {i: inst.tw[i - 1].e for i in C}
     l_win = {i: inst.tw[i - 1].l for i in C}
@@ -157,6 +162,12 @@ def solve_milp_hs(
                             name=f"lr_truck_visit_{k}_{i}")
             m.addConstr(ft[k, i] <= p.drone_capacity + M_LOAD * (1 - wl[k, i]), name=f"ft_cap_{k}_{i}")
 
+        if p.spare_batteries >= 0:
+            # 每多飞一个架次就要换一块满电电池；一台机自带一块，所以上限是 b + m
+            m.addConstr(
+                gp.quicksum(wl[k, i] for i in C) <= p.spare_batteries + p.drones_per_truck,
+                name=f"battery_count_{k}",
+            )
         m.addConstr(gp.quicksum(wl[k, i] for i in C) == gp.quicksum(wr[k, i] for i in C),
                     name=f"lr_balance_{k}")
 
@@ -296,7 +307,7 @@ def solve_milp_hs(
                     + gp.quicksum(y[k, i, j] for i in C if i != j) - wr[k, j]) for j in C),
             name=f"F_init_{k}")
         m.addConstr(G[k, DEPOT] == 0.0, name=f"G_init_{k}")
-        m.addConstr(F[k, DEPOT] <= p.truck_capacity, name=f"truck_cap_init_{k}")
+        m.addConstr(F[k, DEPOT] <= cap_eff, name=f"truck_cap_init_{k}")
         for i in V:
             for j in V:
                 if i == j:
@@ -310,7 +321,7 @@ def solve_milp_hs(
                                 name=f"G_lb_{k}_{i}_{j}")
                     m.addConstr(G[k, j] <= G[k, i] + g[i] + M_LOAD * (1 - x[k, i, j]),
                                 name=f"G_ub_{k}_{i}_{j}")
-                m.addConstr(F[k, i] + G[k, i] <= p.truck_capacity + M_LOAD * (1 - x[k, i, j]),
+                m.addConstr(F[k, i] + G[k, i] <= cap_eff + M_LOAD * (1 - x[k, i, j]),
                             name=f"truck_cap_{k}_{i}_{j}")
 
     # 起飞装载之和 = 由无人机服务客户的派件之和（原模型靠 F 的递推间接口径，这里显式钉住）

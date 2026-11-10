@@ -33,6 +33,7 @@ V_CAP_DRONE = "CAP_DRONE"      # 无人机超载
 V_NFZ = "NFZ"                  # 禁飞区导致不可飞/不可起降
 V_DRONE_BUSY = "DRONE_BUSY"    # 同一架无人机的两个架次在时间上重叠
 V_LR_SAME = "LR_SAME_NODE"     # 同一节点既是回收点又是起飞点（论文的 w_i 表达不了）
+V_BATTERY = "BATTERY"          # 架次数超过手头的电池数（每多飞一个架次就要换一块满电电池）
 
 
 @dataclass
@@ -100,6 +101,10 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
     served = route.served_customers()
     f_list, g_list = g.f_list, g.g_list
     F = float(sum(map(f_list.__getitem__, served)))
+    # E 项：车顶挂架上的备用电池**出车就占重量**（用没用到都一样）。
+    # `spare_batteries=-1`（默认）时不进这一项，历史结果逐位不变。
+    if p.spare_batteries >= 0 and p.battery_mass_kg > 0.0:
+        F += p.spare_batteries * p.battery_mass_kg
     G = 0.0
     if F > p.truck_capacity + 1e-9:
         ev.violations.append(f"{V_CAP_TRUCK} 出车装载 {F:.1f}kg > {p.truck_capacity:.1f}kg")
@@ -144,6 +149,18 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
                 ev.feasible = False
                 if fast:
                     return ev
+            # E 项：每多飞一个架次就要换一块满电电池（第一架次用无人机自带那块）。
+            # 一条路线的电池存量 = 备用 + 各机自带。`-1` = 不限（论文口径），不检查。
+            if p.spare_batteries >= 0:
+                cap = p.spare_batteries + p.drones_per_truck
+                if ev.n_sorties >= cap:
+                    ev.violations.append(
+                        f"{V_BATTERY} 位置{pos} 第 {ev.n_sorties + 1} 个架次超出电池数"
+                        f"（备用 {p.spare_batteries} + 自带 {p.drones_per_truck} = {cap}）"
+                    )
+                    ev.feasible = False
+                    if fast:
+                        return ev
             active.append(s.recover)
             t += p.launch_time
             t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev, g=g, fast=fast)

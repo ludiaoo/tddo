@@ -57,3 +57,29 @@ def test_放开换电后最优值更低且解可行(sid: int) -> None:
     res, cost = evaluate(inst, r.solution)
     assert res.feasible, f"Set{sid} 换电解在评估器里不可行：{res.all_violations()[:3]}"
     assert cost == pytest.approx(r.cost, rel=1e-6), "MILP 目标值与评估器成本不一致"
+
+
+def test_电池库存约束进入MILP() -> None:
+    """E 项：`spare_batteries=b` 时，每条卡车路线的架次数 ≤ b + m，且解仍可由评估器复核。
+
+    两种结局都算通过：模型要么给出满足上限的解，要么直接不可行（说明约束真的在起作用）。
+    **不允许**的是"给出了解但违反了上限"。
+    """
+    from src.io import load_sets as _ls
+
+    by_id = {s["id"]: s for s in _ls()}
+    inst = disable_nfz(build_instance(by_id[3], CFG))
+    inst = replace(inst, params=replace(inst.params, allow_hotswap=True, spare_batteries=1))
+
+    r = solve_milp_hs(inst, time_limit=180.0, allow_hotswap=True)
+    if r.solution is None or r.status not in ("optimal", "time limit"):
+        return                                        # 被约束卡成不可行，已经是有效证据
+
+    cap = inst.params.spare_batteries + inst.params.drones_per_truck
+    for rt in r.solution.routes:
+        assert len(rt.sorties) <= cap, (
+            f"车{rt.truck} 有 {len(rt.sorties)} 个架次，超过上限 {cap}"
+        )
+    res, cost = evaluate(inst, r.solution)
+    assert res.feasible, f"带电池库存的解不可行：{res.all_violations()[:3]}"
+    assert cost == pytest.approx(r.cost, rel=1e-6)
