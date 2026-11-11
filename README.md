@@ -4,6 +4,9 @@
 >
 > **独立复现**：模型、算法、实验全部依据公开论文与公开数据集自行实现，不含原作者代码。算例改造规则论文未公开，本项目自定（见 §6）。因此**趋势对齐、绝对数值不对齐**，本文所有结论都标注了口径。
 
+> **要一页看完**：`PROJECT_成果整合.md`（四张主图 A–D + 主结论 + 边界 + 负结果）。
+> 本 README 是**工程与复现手册**（怎么跑、怎么对不对得上），那份是**成果报告**（得到了什么）。
+
 **一句话结果**：16 个算例、ALNS 2000 轮 × 10 种子，**节省率 51.4%（论文 ≈52%）**；10 客户 4 个算例 **Gurobi 全部证到最优**（ALNS gap 0–1.22%）；100 客户 **CPU 124–187 s（论文 159–254 s）**；PSO 全面劣于 ALNS（+13.3%，论文同向）。**唯一差一个量级的是 Without-detour 列（0.5% vs 8.2%）**，已用算术上界证明是成本结构所致，不是实现缺陷。
 
 ---
@@ -511,7 +514,7 @@ scripts/bench.py
        └─ 每轮 operators.DESTROY[…] / REPAIR[…] → evaluator.evaluate(fast=True)
 ```
 
-### 8.2 `scripts/`（5 039 行，33 个脚本）
+### 8.2 `scripts/`（5 408 行，34 个脚本）
 
 **实验主线（会写 `results/` 的东西）**
 
@@ -563,6 +566,7 @@ scripts/bench.py
 | `battery_effect.py` | 125 | 电池库存四档 × 换电/不换电的配对曲线（M9.20 表 A/B/C） | `battery_effect.csv` |
 | `robustness.py` | 145 | 三组单参数敏感性（换电耗时/悬停功率/电池库存）的总表，统一 30 配对 | `robustness.csv` |
 | `spatial_check.py` | 197 | 合成底图（解析路网）下的均匀 vs 聚簇对照（M9.17 §3.1） | `spatial_check.csv` |
+| `paper_figs.py` | 369 | 论文四张图：换电时刻结构 / 四把刀区间 / 电池曲线 / 结构变化 | `figs/figA–D_*.png` |
 
 ---
 
@@ -570,8 +574,8 @@ scripts/bench.py
 
 | 项 | 数值/做法 |
 |---|---|
-| 代码量 | `src/` 5 801 行（26 个模块）、`scripts/` 5 039 行（33 个）、`tests/` 2 419 行 |
-| 测试 | **251 项**（241 快 + 10 需 Gurobi，`pytest.ini` 用 `slow` 标记）；`python -m pytest -q -m "not slow"` 约 17 s |
+| 代码量 | `src/` 5 801 行（26 个模块）、`scripts/` 5 408 行（34 个）、`tests/` 2 419 行 |
+| 测试 | **255 项**（245 快 + 10 需 Gurobi，`pytest.ini` 用 `slow` 标记）；`python -m pytest -q -m "not slow"` 约 17 s |
 | 金标准算例 | `data/instances/*.json` 是基准，改了生成器会有测试立刻失败并打印第一处差异 |
 | 结果守门 | `scripts.golden_check`：同种子必须**逐位复现**基线（ALNS 确定性），性能改动不许变结果 |
 | 并行 | `bench` / `bench_pso` 多进程 + **逐行落盘可续跑**（按 `set+seed+iters` 去重） |
@@ -623,9 +627,9 @@ data/raw/     原始 mFSTSP 数据（git 忽略）
 data/instances/  16 个金标准算例（JSON，入库）
 src/          库：模型 + 算法（见 §8.1）
 scripts/      实验驱动层（见 §8.2）
-tests/        13 个测试文件，205 项
+tests/        24 个测试文件，255 项
 results/      bench_*.csv · sens_*.csv · table3_v2.csv/.md · milp_check.csv
-results/figs/ routes_fig8.png · fig9–12 · set01–16_network.png
+results/figs/ figA–D（论文四图）· routes_fig8 · fig9–12 · set01–16_network
 results/archive/  2026-11-02 那批旧结果（修复架次完整性校验之前），仅供对照
 ```
 
@@ -640,6 +644,12 @@ results/archive/  2026-11-02 那批旧结果（修复架次完整性校验之前
 | `M8_执行记录_提速与论文协议.md` | 4.6× 提速、2000 轮 × 10 种子、全量重跑记录 |
 | `Without-detour_幅度诊断.md` | 该列 0.5% vs 8.2% 的完整归因 |
 | `约束逐条翻译_2-79.md` / `.html` | 79 条约束逐条公式 + 直译 + 启发式如何处理 |
+| **`PROJECT_成果整合.md`** | **入口**：一页读完的成果报告（四张主图 + 主结论 + 边界 + 负结果） |
+| `M9_成果总览.md` | 扩展线总索引与检验覆盖审计（17 条结论 + 证据强度分级） |
+| `M9.5`–`M9.13` | 六条"让算法变聪明"的路与判定（全部负结果）、等待结构、多机、锚点平移 |
+| `M9.14`–`M9.17` | 全算例、并行收益分解、换电最优性、数据分布 |
+| `M9.18`–`M9.21` | 悬停能耗、原生形态、电池库存、换电耗时（四把刀） |
+| `W1_换电模型设计.md` | 换电 MILP 的标准形式与三道闸门 |
 
 ---
 
