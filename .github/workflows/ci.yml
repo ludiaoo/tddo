@@ -1,0 +1,38 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"   # 与开发环境一致（numpy 2.5 / pandas 3.1 / matplotlib 3.11）
+          cache: pip
+          cache-dependency-path: requirements*.txt
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      # 原始算例是第三方公开数据（83 MB），不入库；测试需要它构造 Instance
+      - name: Fetch mFSTSP instances
+        run: git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
+
+      # 需要 Gurobi 学术许可证，CI 里跳过
+      - name: Unit tests (skip Gurobi)
+        run: python -m pytest -q -m "not slow"
+
+      # 产物是否齐、默认口径是否被改动（逐位回归）
+      - name: Project self-check
+        run: python -m scripts.project_check

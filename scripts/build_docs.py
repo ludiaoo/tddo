@@ -1,7 +1,7 @@
 """把带 LaTeX 公式的 Markdown 转成自包含的 HTML（MathML，不依赖 CDN/联网）。
 
 用法：
-    python -m scripts.build_docs            # 转换根目录下所有含 $$ 的 md
+    python -m scripts.build_docs            # 转换根目录与 docs/ 下所有含 $$ 的 md
     python -m scripts.build_docs 某文件.md
 
 为什么用 MathML 而不是 KaTeX/MathJax：MathML 是浏览器原生支持（Chrome/Edge 109+），
@@ -72,7 +72,8 @@ def build(md: Path) -> Path | None:
 
 
 def main() -> None:
-    targets = [Path(a) for a in sys.argv[1:]] or sorted(PROJECT_ROOT.glob("*.md"))
+    targets = [Path(a) for a in sys.argv[1:]] or sorted(
+        [*PROJECT_ROOT.glob("*.md"), *PROJECT_ROOT.glob("docs/**/*.md")])
     built = [build(p) for p in targets]
     built = [p for p in built if p]
     for p in built:

@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+title: "Truck-drone joint delivery: a reproduction and extension study"
+abstract: >-
+  Independent reproduction of a truck-drone tandem delivery model with
+  synchronized rendezvous, bidirectional loads and time-dependent no-fly zones,
+  plus a rigorous analysis of a modelling assumption (single w_i flag) that
+  provably overstates the paper's optimum, and a boundary analysis of the
+  resulting cost reduction under hover-energy pricing, battery-swap duration,
+  battery stock, instance form and spatial layout.
+authors:
+  - name: ludiaoo
+    affiliation: "Independent researcher"
+version: 1.0.0
+date-released: 2026-11-11
+license: MIT
+repository-code: "https://github.com/ludiaoo/truck-drone-bidirectional-repro"
+keywords:
+  - vehicle routing
+  - truck-drone tandem
+  - ALNS
+  - mixed-integer programming
+  - no-fly zone
+  - reproduction
+references:
+  - type: article
+    title: "Optimizing bidirectional delivery with multiple drones and trucks"
+    authors:
+      - family-names: Zeng
+        given-names: J.
+      - family-names: Hu
+        given-names: Y.
+      - family-names: Pei
+        given-names: M.
+    journal: Transportation Research Part E
+    volume: 205
+    start: 104511
+    year: 2026

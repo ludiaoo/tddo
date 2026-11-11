@@ -35,8 +35,10 @@ REQUIRED = {
                    "fig10_drone_payload.png", "fig11_nfz_sensitivity.png",
                    "fig12_mission_count.png"],
 }
-DOCS = ["PROJECT_成果整合.md", "PROJECT_项目书.md", "README.md",
-        "M9_成果总览.md", "W1_换电模型设计.md"]
+DOCS = ["README.md", "LICENSE", "CITATION.cff", ".github/workflows/ci.yml",
+        "docs/项目书.md", "docs/成果整合.md", "docs/求职_项目经历.md",
+        "docs/工程与复现手册.md",
+        "docs/milestones/M9_成果总览.md", "docs/milestones/W1_换电模型设计.md"]
 
 
 def _count(pattern: str) -> tuple[int, int]:
