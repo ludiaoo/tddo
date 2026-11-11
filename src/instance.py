@@ -138,6 +138,9 @@ class FleetParams:
     spare_batteries: int = -1
     battery_mass_kg: float = 0.0  # 单块电池质量（kg）。只在给了 spare_batteries 时计入卡车载荷
                                   # （车顶挂架放满再出发，用没用到都占重量）
+    # 换电本身的耗时（秒）：无人机落地后换电池、再起飞。默认 0 = 现在的口径
+    # （只算 recovery_time + launch_time）。同节点「落地即再起飞」时，卡车必须等这段换电时间。
+    swap_time: float = 0.0
 
     @classmethod
     def from_config(cls, cfg: dict) -> "FleetParams":
@@ -163,6 +166,7 @@ class FleetParams:
             e_hover=float(energy.get("hover_power_kw", 0.0)) / 3600.0,
             spare_batteries=int(fleet.get("spare_batteries", -1)),
             battery_mass_kg=float(fleet.get("battery_mass_kg", 0.0)),
+            swap_time=float(fleet.get("swap_s", 0.0)),
         )
 
 

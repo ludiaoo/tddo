@@ -162,6 +162,11 @@ def _simulate_route(inst: Instance, route: Route, fast: bool = False) -> RouteEv
                     if fast:
                         return ev
             active.append(s.recover)
+            # 换电耗时（`fleet.swap_s`，默认 0 = 现行口径）：只有在「同一节点先落地、立刻再起飞」时
+            # 才额外占时间——换电池要在卡车顶上做，车必须等。若下一个架次在后面的节点起飞，
+            # 换电可以在卡车开车间隙完成，不额外占时间（这一条是保守的，见 M9.21 的说明）。
+            if p.swap_time > 0.0 and pos in recover_at:
+                t += p.swap_time
             t += p.launch_time
             t_d, energy, ok = _fly_sortie(inst, route, s, start_node=i, t_start=t, ev=ev, g=g, fast=fast)
             if ok:

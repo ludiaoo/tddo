@@ -66,7 +66,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           drones_per_truck: int = 1, polish: str = "off",
           extra_trucks: int = 0, hotswap: bool = False,
           sortie_span: int = 1, hover_power_kw: float = 0.0,
-          spare_batteries: int = -1, battery_mass_kg: float = -1.0) -> None:
+          spare_batteries: int = -1, battery_mass_kg: float = -1.0,
+          swap_time: float = -1.0) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -85,6 +86,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
         _CFG["fleet"]["spare_batteries"] = spare_batteries
     if battery_mass_kg >= 0.0:             # E 项：单块电池重量（<0 = 用配置值）
         _CFG["fleet"]["battery_mass_kg"] = battery_mass_kg
+    if swap_time >= 0.0:                   # M9.21：换电本身的耗时（<0 = 用配置值）
+        _CFG["fleet"]["swap_s"] = swap_time
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -206,6 +209,8 @@ def main() -> None:
                     help="每车备用电池块数（-1=不限，论文口径；E 项，一条路线最多 b+m 个架次）")
     ap.add_argument("--battery-mass", type=float, default=-1.0,
                     help="单块电池质量 kg（<0=用 configs 里的值；0=关掉重量项，只留数量约束）")
+    ap.add_argument("--swap-time", type=float, default=-1.0,
+                    help="换电耗时 s（<0=用配置值；0=现行口径；建议测 120 / 300）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -258,7 +263,8 @@ def main() -> None:
                                            args.sortie_span,
                                            args.hover_power,
                                            args.spare_batteries,
-                                           args.battery_mass)) as pool:
+                                           args.battery_mass,
+                                           args.swap_time)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

@@ -22,6 +22,10 @@ allow_hotswap = false             # [扩展] 同节点先回收再起飞（M9.15
 spare_batteries = -1
 # 单块电池质量。0.78 kWh 的 LiPo 约 4 kg（≈195 Wh/kg），只在上面的 b ≥ 0 时计入卡车载荷
 battery_mass_kg = 4.0
+# [换电耗时] 无人机落地、换电池、再起飞要多久。默认 0 = 只算 recovery_s + launch_s（现行口径）。
+# 120 s = 行业常见的「整包快拆」量级；300 s = 偏保守（人工换包 + 检查）。
+# 只在「同一节点落地即再起飞」时额外占时间（卡车必须等）。
+swap_s = 0.0
 
 [energy]
 # 式(39)：E = d · (e_drone · L + b)
