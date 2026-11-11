@@ -1,7 +1,7 @@
-# TRE 论文复现任务清单（卡车-多无人机协同配送 · 时空禁飞区）
+# 任务清单：卡车-多无人机协同配送（时空禁飞区）
 
 > 跨电脑执行版：只看本文件即可推进，不依赖原对话。
-> 复现目标论文：Zeng J., Hu Y., Pei M. (2026). *Optimizing bidirectional delivery with multiple drones and trucks: a mixed-integer nonlinear model to addressing no-fly zone constraints.* **Transportation Research Part E, 205, 104511.** DOI: 10.1016/j.tre.2025.104511
+> 参考基线：Zeng J., Hu Y., Pei M. (2026). *Optimizing bidirectional delivery with multiple drones and trucks: a mixed-integer nonlinear model to addressing no-fly zone constraints.* **Transportation Research Part E, 205, 104511.** DOI: 10.1016/j.tre.2025.104511
 > 复现档位：**工程复现**（ALNS 主线 + 16 算例对标 Table 3，Gurobi 仅小规模验证）。预计 5–7 周（每周 10–12 小时）。
 > 核心策略：最大化复用本人 `2StageTDEVRPsolver` 仓库；非线性物理量放 Python 评估器，Gurobi 只建简化 MILP 跑小规模。
 

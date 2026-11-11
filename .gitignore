@@ -44,3 +44,6 @@ results/ml/candidates_*.csv.gz
 
 # 冒烟模式的临时产物（4 分钟链路验证，数字不可用于报告）
 results/*_quick.csv
+
+# 本地的会话交接与私人笔记（不入库）
+_local/

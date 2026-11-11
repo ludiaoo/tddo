@@ -23,7 +23,10 @@ SOFTWARE.
 ---
 
 Note on third-party material:
-- Test instances derive from the mFSTSP dataset (Murray & Raj, 2020), which is
-  distributed separately and is NOT included in this repository.
-- The reproduced paper (Zeng, Hu & Pei, 2026, TR-E 205:104511) and its figures
-  are copyrighted by Elsevier and are NOT included in this repository.
+- Road-network base data derive from the mFSTSP dataset (Murray & Raj, 2020),
+  which is distributed separately and is NOT included in this repository.
+- All solver, evaluator, experiment and figure code in this repository is
+  original work.
+- The paper referenced as the modelling baseline (Zeng, Hu & Pei, 2026,
+  TR-E 205:104511) and its figures are copyrighted by Elsevier and are NOT
+  included in this repository.
