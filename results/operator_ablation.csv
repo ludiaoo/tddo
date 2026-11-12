@@ -1,0 +1,4 @@
+variant,desc,n,mean_pct,median_pct,better,worse,p,tie
+nfz1,关掉禁飞区折扣（related 退化为纯距离）,30,1.388,0.535,12,18,0.36159,
+win2,worst 在前 2k 内随机抽 k,30,0.304,0.044,15,15,1.0,
+nfz1_full,关掉折扣（全量 16×10）,160,0.308,0.0,61,68,0.59748,31.0

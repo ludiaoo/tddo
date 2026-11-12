@@ -67,7 +67,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           extra_trucks: int = 0, hotswap: bool = False,
           sortie_span: int = 1, hover_power_kw: float = 0.0,
           spare_batteries: int = -1, battery_mass_kg: float = -1.0,
-          swap_time: float = -1.0) -> None:
+          swap_time: float = -1.0,
+          nfz_discount: float = -1.0, worst_window: float = -1.0) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -88,6 +89,12 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
         _CFG["fleet"]["battery_mass_kg"] = battery_mass_kg
     if swap_time >= 0.0:                   # M9.21：换电本身的耗时（<0 = 用配置值）
         _CFG["fleet"]["swap_s"] = swap_time
+    if nfz_discount >= 0.0 or worst_window > 0.0:   # M9.22：算子内部策略消融
+        import src.operators as _ops
+        if nfz_discount >= 0.0:
+            _ops.NFZ_DISCOUNT = nfz_discount
+        if worst_window > 0.0:
+            _ops.WORST_WINDOW = worst_window
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -211,6 +218,10 @@ def main() -> None:
                     help="单块电池质量 kg（<0=用 configs 里的值；0=关掉重量项，只留数量约束）")
     ap.add_argument("--swap-time", type=float, default=-1.0,
                     help="换电耗时 s（<0=用配置值；0=现行口径；建议测 120 / 300）")
+    ap.add_argument("--nfz-discount", type=float, default=-1.0,
+                    help="related 算子里禁飞区客户的距离权重（<0=用默认 0.6；1.0=关掉该偏好）")
+    ap.add_argument("--worst-window", type=float, default=-1.0,
+                    help="worst 算子的候选窗 = k×该系数（<0=用默认 1.0=严格取前 k；2.0=在前 2k 内随机）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -264,7 +275,9 @@ def main() -> None:
                                            args.hover_power,
                                            args.spare_batteries,
                                            args.battery_mass,
-                                           args.swap_time)) as pool:
+                                           args.swap_time,
+                                           args.nfz_discount,
+                                           args.worst_window)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

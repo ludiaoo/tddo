@@ -36,6 +36,14 @@ DRONE_TOPK = int(os.environ.get("ALNS_DRONE_TOPK", "0"))
 # 两个一段的架次在时间上最多首尾相接，永远不可能真正重叠——而 m≥2 的全部价值
 # 恰恰来自重叠。允许 (k, k+d) 之后，卡车走多段、无人机飞一段，两架才有机会同时在飞。
 SORTIE_SPAN = max(1, int(os.environ.get("ALNS_SORTIE_SPAN", "1")))
+# 算子内部策略的两个开关（M9.22）。默认值即历史行为，改动默认值会破坏逐位回归。
+#
+# NFZ_DISCOUNT：`related` 里「禁飞区 2r 内的客户」距离权重。这些客户共享同一条绕行约束，
+#   压低距离等于把它们排到近邻前面，成片移除才能改变绕行结构。1.0 = 关掉这个偏好。
+# WORST_WINDOW：`worst` 的候选窗 = k × 该系数。1.0 = 严格取节省额最高的 k 个（现行口径）；
+#   >1 时在更大的窗口内随机抽 k 个，牺牲一点贪心换取多样性。
+NFZ_DISCOUNT = float(os.environ.get("ALNS_NFZ_DISCOUNT", "0.6"))
+WORST_WINDOW = float(os.environ.get("ALNS_WORST_WINDOW", "1.0"))
 _PROBE = None      # 诊断用：置为 list 时，把 (代理量, 真实Δcost) 追加进去（平时零开销）
 
 
@@ -218,29 +226,40 @@ def destroy_worst(inst: Instance, sol: Solution, rng, ratio: float = 0.3) -> Rem
         return Removal(sol, [])
     sav = sorted(((c, _saving_if_removed(inst, sol, c)) for c in custs), key=lambda x: -x[1])
     k = max(1, int(round(ratio * len(custs))))
-    # 带随机化的前 k 名，避免每轮都删同一批
-    picked = [c for c, _ in sav[: min(len(sav), k * 2)]][:k]
+    win = min(len(sav), max(k, int(round(k * WORST_WINDOW))))
+    if win > k:                       # WORST_WINDOW > 1：在候选窗内随机抽 k 个
+        idx = sorted(int(i) for i in rng.choice(win, size=k, replace=False))
+        picked = [sav[i][0] for i in idx]
+    else:                             # 默认口径：严格取前 k 个（与历史结果逐位一致）
+        picked = [c for c, _ in sav[:k]]
     new_sol, dropped = remove_customers(sol, set(picked))
     return Removal(new_sol, dropped)
+
+
+def _related_score(inst: Instance, seed: int, c: int) -> float:
+    """`related` 的排序键：与种子点的欧氏距离，禁飞区 2r 内的客户打折。
+
+    打折的理由：这些客户共享同一条绕行约束，逐段改动效果很差，必须成片移除才能改变结构。
+    `NFZ_DISCOUNT = 1.0` 时退化为纯距离排序。
+    """
+    base = inst.base
+    d = float(np.hypot(base.nodes[c].x - base.nodes[seed].x,
+                       base.nodes[c].y - base.nodes[seed].y))
+    if NFZ_DISCOUNT >= 1.0:
+        return d
+    near_nfz = any(
+        np.hypot(base.nodes[c].x - z.cx, base.nodes[c].y - z.cy) <= z.r * 2.0 for z in inst.nfz
+    )
+    return d * NFZ_DISCOUNT if near_nfz else d
 
 
 def destroy_related(inst: Instance, sol: Solution, rng, ratio: float = 0.3) -> Removal:
     custs = _all_customers(sol)
     if not custs:
         return Removal(sol, [])
-    base = inst.base
     seed = int(rng.choice(custs))
-
-    def score(c: int) -> float:
-        d = np.hypot(base.nodes[c].x - base.nodes[seed].x, base.nodes[c].y - base.nodes[seed].y)
-        # 禁飞区附近的客户算"相关"：共享同一绕行约束，成片移除才能改变绕行结构
-        near_nfz = any(
-            np.hypot(base.nodes[c].x - z.cx, base.nodes[c].y - z.cy) <= z.r * 2.0 for z in inst.nfz
-        )
-        return d * (0.6 if near_nfz else 1.0)
-
     k = max(1, int(round(ratio * len(custs))))
-    picked = sorted(custs, key=score)[:k]
+    picked = sorted(custs, key=lambda c: _related_score(inst, seed, c))[:k]
     new_sol, dropped = remove_customers(sol, set(picked))
     return Removal(new_sol, dropped)
 
