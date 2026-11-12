@@ -1,160 +1,267 @@
-# TDDO：卡车带无人机的配送路径优化
+# TDDO
+
+**卡车—无人机联合配送优化器**（Truck–Drone Delivery Optimizer）
 
 ![tests](https://img.shields.io/badge/tests-255%20%28245%20fast%20%2B%2010%20Gurobi%29-brightgreen)
 ![python](https://img.shields.io/badge/python-3.13-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![full run](https://img.shields.io/badge/full%20run-1.6%20h-orange)
 
-卡车沿路网送货，无人机挂在车顶。到某个停靠点无人机起飞，自己跑几个客户，再在前面某个点落回车上。
-模型要定的是这四件事：卡车走哪条路、无人机从哪飞、在哪儿追上车、带几块电池。
+TDDO 求解带时间窗、双向载荷与时空禁飞区的卡车—无人机协同配送问题。给定客户集合、需求、时间窗
+与禁飞区，输出卡车路径、无人机架次的起飞与回收位置、起飞时刻与电池配置，目标为无人机电费、
+卡车油费与司机工时之和最小。
 
-这类问题在文献里叫 truck-drone tandem，模型形式基本定型了。我做这个项目的目的有两个：
-把它跑到实际规模，以及弄清楚模型里那个「降落和起飞共用一个 0-1 变量」的写法值多少钱。
+模型采用混合整数线性规划，共 79 条约束；实际规模由自适应大邻域搜索（ALNS）求解，小规模算例由
+Gurobi 求到最优。实验覆盖 16 个算例（10–100 客户）× 10 个随机种子，相对纯卡车方案成本降低 15.9%，
+100 客户单次求解耗时 124–187 s。
 
-现在的结果是：16 个算例、每个 10 个种子上，比纯卡车方案便宜 15.9%；把那个变量拆开之后，
-4 个小算例的最优值全部下降。但降多少取决于几个设定，区间是 1.5%–3.4%。
+## 目录
 
-![四把刀](results/figs/figB_benefit_bounds.png)
+- [1. 问题定义](#1-问题定义)
+- [2. 数学模型](#2-数学模型)
+- [3. 求解方法](#3-求解方法)
+- [4. 实验结果](#4-实验结果)
+- [5. 安装](#5-安装)
+- [6. 使用](#6-使用)
+- [7. 项目结构](#7-项目结构)
+- [8. 正确性验证](#8-正确性验证)
+- [9. 已知局限](#9-已知局限)
+- [10. 参考文献](#10-参考文献)
+- [11. 许可](#11-许可)
+- [Abstract (English)](#abstract-english)
 
-*30 个配对，每次只改一个设定。唯一跨过 0 线的是「每车只带 1 块备用电池」。*
+## 1. 问题定义
 
-## 怎么建模
+一辆卡车携带若干架无人机沿路网行驶。无人机可在任意停靠点（配送中心或客户点）起飞，独立服务
+若干客户后在后续停靠点返回卡车。需要联合决策：
 
-变量分五组。
+1. 卡车路径与各停靠点的服务分配；
+2. 每个无人机架次的起飞点、回收点与服务客户序列；
+3. 各架次的起飞时刻；
+4. 车队规模、每车无人机数量与备用电池数量。
 
-| 组 | 符号 | 干什么 |
+目标函数为三项运营成本之和：无人机电能消耗、卡车燃油消耗、司机工时。
+
+问题的主要耦合来自三个方面：
+
+- **时间同步**：架次起飞时刻受卡车到达时刻约束，回收时刻由飞行时间与服务时长决定，
+  而卡车在回收点的等待决策又反过来影响后续到达时刻。
+- **能量与载荷**：单段能耗与机上载荷线性相关，载荷随服务进程变化，故能耗须逐段累积，
+  不可按平均值估算。
+- **时空禁飞区**：航段是否可飞取决于飞行时刻是否落在禁飞时段内，绕行距离为时间相关的分段函数。
+
+此外包含双向载荷（同时派送与取件）与单架次电量上限两项约束。
+
+## 2. 数学模型
+
+决策变量分为五组。
+
+| 组别 | 符号 | 含义 |
 |---|---|---|
-| 路由 | `x[k,i,j]` | 卡车 k 走不走弧 (i,j) |
-| 架次 | `y[k,i,j]`、`wl/wr[k,i]` | 无人机从 i 起飞、在 j 回收，起降成对 |
-| 时间 | `Tt[k,i]`、`Td[k,i]` | 卡车到达、无人机起飞 |
-| 载荷 | `F/G[k,i]`、`ft[k,i]` | 派件剩余、取件累计、起飞装载 |
-| 能量 | `E[k,i]`、`ec[i,j]` | 逐段累加，单架次不超过 η·E_max |
+| 路由 | `x[k,i,j]` | 卡车 k 是否经过弧 (i,j) |
+| 架次 | `y[k,i,j]`、`wl/wr[k,i]` | 无人机自 i 起飞、于 j 回收；起降配对 |
+| 时间 | `Tt[k,i]`、`Td[k,i]` | 卡车到达时刻、无人机起飞时刻 |
+| 载荷 | `F/G[k,i]`、`ft[k,i]` | 剩余派件量、累计取件量、架次起飞装载量 |
+| 能量 | `E[k,i]`、`ec[i,j]` | 累计能耗、单段能耗 |
 
-约束 79 条，按功能分七族（路由与流、架次耦合、时间同步、时间窗、载荷、能量、空域）。
-最烦的是时间同步：无人机几点起飞看卡车什么时候到，几点落地看它跑完几个客户要多久，
-而卡车在回收点还得决定等不等它。两边互为约束，绕不开。
+79 条约束按功能分为七族：路由与流守恒、架次耦合、时间同步、时间窗、载荷、能量、空域。
+完整的逐条公式与实现映射见 [`docs/笔记/约束逐条翻译.md`](docs/笔记/约束逐条翻译.md)。
 
-约束没有全部写进检查器。有一半交给解的表示：`Route → Sortie` 三层结构下，「只在停靠点起降」
-「流守恒」这类事根本没法违反，检查器只管剩下真正要查的，单个候选解 30 µs。
-ALNS 能跑到 2000 轮，靠的就是这个数。
+实现上有一项影响较大的设计选择：约半数约束不在评估器中显式检验，而由解的表示层保证成立。
+`Route → Sortie` 三层结构使「仅在停靠点起降」「流守恒」等条件无法被构造出来，评估器只需检验
+其余部分，单次候选解评估耗时约 30 µs。该设计使 ALNS 在 2000 轮迭代下的计算开销可控。
 
-## 怎么求解
+## 3. 求解方法
 
-ALNS：4 个破坏算子（随机、拔贵的、拔相近的、结构重组）× 4 个修复算子（随机、卡车、无人机、均衡），
-模拟退火接受，算子权重分四档加分。小算例另外用 Gurobi 解到最优。
+**启发式求解。** 采用自适应大邻域搜索，包含四个破坏算子（随机移除、成本优先移除、
+邻域相关性移除、卡车结构重组）与四个修复算子（随机插入、卡车优先插入、无人机优先插入、
+均衡插入），接受准则为模拟退火，算子权重按四档表现自适应更新。
 
-精确解在这里的用途不是「小规模演示」。它有两个实际作用：给启发式定标，10 客户上 ALNS 与最优差 0–1.22%；
-以及后面证明「最优值真的被改写了」时，只有它说话算数。
+**精确求解。** 小规模算例由 Gurobi 求解至最优，用途有二：一是标定启发式解的质量，
+10 客户算例上 ALNS 与最优解的差距为 0–1.22%；二是为最优性论断提供依据，
+第 4.2 节的模型改进结论依赖精确解而非启发式比较。
 
-中间做过一轮提速，4.6 倍。主要手段是几何缓存和把路线评估结果记下来，另外加了违约早退、
-多进程逐行落盘以便中断续跑。
+**工程优化。** 相对初始实现取得 4.6 倍加速，主要手段为几何距离缓存、路径评估结果记忆化、
+违约早退，以及多进程逐行落盘以支持中断续跑。
 
-## 结果
+## 4. 实验结果
 
-16 个算例（10 / 25 / 50 / 100 客户，两座城市），每个 10 个种子，2000 轮。
-相对纯卡车方案成本低 15.9%（同种子配对），相对自己的初始可行解再降 51.4%。
-100 客户单次 124–187 秒，20 核并行。
+实验设置：16 个算例（10、25、50、100 客户，两座城市，配送中心居中与边缘两种布局），
+每个算例 10 个独立随机种子，每次求解 2000 轮迭代。
 
-有个数当时觉得反常：禁飞区绕行只让成本涨 0.5%。查下来是成本主要被司机工时撑着，
-绕行多出来的几公里摊到时间上不显眼。这条后来解释了实验结果里很多「不显著」。
+### 4.1 求解质量
 
-### 那个 0-1 变量
-
-标准写法里，「在 i 降落」和「从 i 起飞」是同一个变量，于是同一个节点只能二选一。
-物理上没道理，换个电池再起飞是常规操作。拆成到达、出发两套之后：
-
-- 把「一个节点只做一件事」的限制加回去，最优值与原形式逐位相同。这一步说明拆分本身没写错。
-- 放开，4 个 10 客户算例的最优值全部下降，−0.17% 到 −4.33%，全部证到 gap 0。
-- 两个解的差别只落在一条约束上，解本身只违反它。差距确实来自这里，不是别处。
-
-但这个百分比不是常数。同一批 30 个配对，改一个设定就变：
-
-| 设定 | 降本 |
+| 指标 | 结果 |
 |---|---|
-| 电池管够、换电免费、悬停免费 | −3.37% |
-| 换电要 2 分钟 / 5 分钟 | −1.62% / −2.26% |
-| 每车 3 / 2 / 1 / 0 块备用电池 | −2.52% / −2.04% / −1.02% / **0.00%** |
+| 相对纯卡车方案 | 成本降低 15.9%（同种子配对） |
+| 相对初始可行解 | 成本降低 51.4% |
+| 100 客户单次求解 | 124–187 s（20 核并行） |
+| 10 客户算例与精确解差距 | 4/4 算例 gap 0%；ALNS 差距 0–1.22% |
+| 禁飞区绕行的成本影响 | +0.5% |
+
+禁飞区一项的结果低于预期。经分解，成本主要由司机工时构成，绕行增加的距离折算为时间后
+在总成本中占比很小。该结论亦解释了后续多组实验中若干效应不显著的现象。
+
+### 4.2 架次起降变量的建模改进
+
+常规建模将「无人机在节点 i 降落」与「从节点 i 起飞」写入同一个 0-1 变量，导致同一节点
+只能承担其中一项。而实际作业中，无人机在节点完成回收、更换电池后再次起飞属常规操作。
+本项目将该变量拆分为到达与出发两组：
+
+- 恢复「单节点单用途」约束后，最优值与原形式逐位相同，验证拆分未引入偏差；
+- 移除该约束后，4 个 10 客户算例的最优值全部下降，幅度为 −0.17% 至 −4.33%，且均证到 gap 0%；
+- 两组解的差异仅落在该条约束上，改进幅度可归因于该单一建模假设。
+
+### 4.3 收益的边界
+
+上述降幅并非定值。在同一组 30 个（算例, 种子）配对上逐一改变单一设定，结果如下：
+
+| 设定 | 成本降幅 |
+|---|---|
+| 基准（电池不限、换电与悬停不计时） | −3.37% |
+| 换电耗时 2 min / 5 min | −1.62% / −2.26% |
+| 每车备用电池 3 / 2 / 1 / 0 块 | −2.52% / −2.04% / −1.02% / **0.00%** |
 | 悬停按 1.10 kW 计电 | −2.38% |
-| 无取件、无禁飞区、宽时间窗（纯派送形态） | −4.29% |
+| 纯派送形态（无取件、无禁飞区、宽时间窗） | −4.29% |
 
-0.00% 那格不是收益变小。一块电池都不带时一条路线最多一个架次，落地之后没有第二次起飞，
-换电在模型里无从发生。
+备用电池为 0 时收益为零，原因并非收益衰减：此时单条路径最多允许一个架次，无人机落地后
+不存在再次起飞的机会，换电机制在模型层面无法发生。
 
-所以对外我只说 1.5%–3.4%，前提是每车至少 2 块备用电池、换电不超过 5 分钟。换电耗时这一条我扫了
-0 / 120 / 300 秒三个点，120 和 300 之间差 0.69%，p 值 0.59，分不出高低。本来想给一条曲线，
-后来只能给区间。
+因此本项目对外报告区间 **1.5%–3.4%**，并附带适用条件：每车备用电池不少于 2 块、换电耗时
+不超过 5 min。换电耗时测点取 0、120、300 s 三档，120 s 与 300 s 之间差异为 0.69%
+（配对符号检验 p = 0.59），不足以支持斜率估计，故仅报告区间。
 
-## 跑起来
+![敏感性分析](results/figs/figB_benefit_bounds.png)
+
+*图 1：30 个配对上逐一改变单一设定后的成本降幅及 95% 置信区间。区间跨越零线的仅有
+「每车 1 块备用电池」一项。*
+
+## 5. 安装
+
+环境要求：Python 3.13；精确求解需 Gurobi 9.5 及以上版本及有效许可证。
 
 ```bash
 python -m venv .venv && .venv/Scripts/activate     # Linux/macOS: source .venv/bin/activate
 pip install -r requirements.txt
 
-# 底图数据 83 MB，不入库
+# 算例底图数据（83 MB，未纳入版本控制）
 git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
-python -m src.generator                        # 生成 16 个算例 JSON
 
-python -m scripts.project_check                # 产物齐不齐、默认口径有没有被改
-python -m scripts.reproduce --quick            # 4 分钟冒烟，不覆盖主结果
-python -m scripts.reproduce                    # 全量约 1.6 h，20 核
-pytest -q -m "not slow"                        # 245 项快速测试
+# 生成 16 个基准算例
+python -m src.generator
 ```
 
-精确解要 Gurobi 学术许可证。没有的话跑不了 `scripts.run_milp` 和 10 项 `-m slow` 的测试，其余都能跑。
+未配置 Gurobi 时，除 `scripts.run_milp` 与 10 项标记为 `slow` 的测试外，其余功能均可运行。
 
-## 目录
+## 6. 使用
+
+```bash
+# 项目自检：检查产物完整性与默认口径是否被修改
+python -m scripts.project_check
+
+# 快速验证：小轮数、少算例，约 4 分钟，不覆盖已有结果
+python -m scripts.reproduce --quick
+
+# 全量实验：约 1.6 小时（20 核）
+python -m scripts.reproduce
+
+# 单元测试
+pytest -q -m "not slow"
+```
+
+单组实验通过 `python -m scripts.bench --exp <实验名>` 运行，常用参数如下：
+
+| 参数 | 说明 |
+|---|---|
+| `--sets` | 算例编号，如 `5,7,9,12,13,15` |
+| `--seeds` | 随机种子数量 |
+| `--iters` | ALNS 迭代轮数 |
+| `--hotswap` | 允许同一节点先回收再起飞 |
+| `--drones-per-truck` | 每车可同时作业的无人机数量 |
+| `--swap-time` | 换电耗时（秒） |
+| `--spare-batteries` | 每车备用电池数量，`-1` 表示不限 |
+| `--hover-power` | 悬停功率（kW），`0` 表示悬停不计电 |
+
+完整的开关说明与参数默认值见 [`docs/工程手册.md`](docs/工程手册.md)。
+
+## 7. 项目结构
 
 ```
 configs/          模型与算例参数（TOML）
-data/instances/   16 个算例（JSON，入库）
-data/raw/         底图数据（不入库）
-src/              模型 + 算法，26 个模块 5.8k 行
-scripts/          实验、诊断、出图、自检，35 个脚本 5.5k 行
-tests/            24 个文件 255 项测试
-results/          60 份 CSV（3 402 次求解）+ figs/
-docs/             项目书、成果报告、求职材料、设计笔记
+data/instances/   16 个基准算例（JSON）
+data/raw/         算例底图数据（未纳入版本控制）
+src/              模型与算法，26 个模块，约 5.8k 行
+scripts/          实验、诊断、绘图与自检，35 个脚本，约 5.5k 行
+tests/            24 个测试文件，255 项测试
+results/          60 份结果表（3 402 次求解）与主图
+docs/             项目设计、成果报告、工程手册、设计笔记
 ```
 
-验证上用了四道闸：默认口径逐位回归（改性能时结果一位都不许变）、同种子配对统计（不拿各种子的最好值比）、
-最优性等价、MILP 解转回评估器复算。最后一道最便宜也最有用，两边对不上就一定有一边写错了。
+文档索引：
 
-想细看的话：项目设计在 [`docs/项目书.md`](docs/项目书.md)，一页成果和四张图在
-[`docs/成果整合.md`](docs/成果整合.md)，每个开关干什么在 [`docs/工程手册.md`](docs/工程手册.md)，
-结论的证据强度分级在 [`docs/设计笔记/结论总览.md`](docs/设计笔记/结论总览.md)，
-换电模型的完整形式在 [`docs/设计笔记/W1_换电模型设计.md`](docs/设计笔记/W1_换电模型设计.md)。
+| 内容 | 位置 |
+|---|---|
+| 项目设计：问题、建模、算法、验证 | [`docs/项目书.md`](docs/项目书.md) |
+| 成果报告：主图、结论、边界与负结果 | [`docs/成果整合.md`](docs/成果整合.md) |
+| 工程手册：运行方式与全部开关 | [`docs/工程手册.md`](docs/工程手册.md) |
+| 结论清单与证据强度分级 | [`docs/设计笔记/结论总览.md`](docs/设计笔记/结论总览.md) |
+| 起降变量拆分的完整形式与验证 | [`docs/设计笔记/W1_换电模型设计.md`](docs/设计笔记/W1_换电模型设计.md) |
+| 约束逐条翻译（公式与实现） | [`docs/笔记/约束逐条翻译.md`](docs/笔记/约束逐条翻译.md) |
 
-## 已知局限
+## 8. 正确性验证
 
-1. 算例是自建的。底图坐标来自公开路网，需求、时间窗、禁飞区、车队规模都是按规则生成，种子固定。
-   所以数字之间可以比，绝对金额不要拿去跟别人的结果对。
-2. 精确模型里没有禁飞区，也没有悬停。绕行距离是时间相关的分段函数，线性化代价太高，我没做；
-   悬停同理。所以「最优」这个说法只在悬停免费的前提下成立。
-3. 最大只做到 100 客户，200+ 没测过，也不打算外推。
-4. 上面那几个敏感性是分别测的，没做联合。叠起来是多少我不知道，拿单参数的结论去加总没有依据。
+项目采用四类相互独立的验证手段：
 
-## 参考
+1. **逐位回归**：`scripts.golden_check` 校验固定种子下的目标值是否与基线完全一致。
+   默认参数下的任何改动若影响结果，该检查即失败；性能优化过程中结果未发生任何变化。
+2. **配对统计**：所有方案对比均在相同（算例, 种子）配对上计算相对差，不使用各种子最优值，
+   以避免极值偏差。
+3. **最优性等价**：模型的每次重构均要求「恢复原约束后与原形式逐位相同」，
+   以此排除重构引入的偏差。
+4. **双实现互查**：MILP 解转换为内部解结构后由评估器复算目标值与可行性，
+   两者须一致；不一致即表明至少一方存在实现错误。
 
-模型形式与问题定义沿用该领域的主流建模，求解器、评估器、扩展和全部实验是本项目自己实现的。
+## 9. 已知局限
+
+1. **算例为自行构建。** 底图坐标取自公开路网数据，需求、时间窗、禁飞区与车队规模由规则生成，
+   种子固定，生成规则见 `configs/`。因此算例间结果可比，绝对成本不宜与其他研究直接比较。
+2. **精确模型不含禁飞区与悬停。** 绕行距离为时间相关的分段函数，线性化代价过高；
+   悬停同理。最优性结论仅在悬停不计电的口径下成立。
+3. **规模上限为 100 客户。** 未验证 200 客户以上的表现，亦不外推。
+4. **敏感性分析为单参数。** 各设定分别测试，未做联合扰动，叠加后的数值不可由单参数结果推得。
+
+## 10. 参考文献
+
+问题形式与模型符号沿用该领域的主流建模；求解器、评估器、扩展实验与结论为本项目实现，
+不含第三方代码。
 
 - Zeng J., Hu Y., Pei M. (2026). Optimizing bidirectional delivery with multiple drones and
   trucks. *Transportation Research Part E*, 205, 104511.
-- 底图数据：Murray C., Raj R. (2020). The multiple flying sidekicks traveling salesman problem.
-  *Transportation Research Part C*, 110, 368–398.
+- Murray C., Raj R. (2020). The multiple flying sidekicks traveling salesman problem.
+  *Transportation Research Part C*, 110, 368–398.（算例底图数据来源）
 
-不含第三方代码。论文 PDF 和出版方原图有版权，没有入库。
+论文原文与出版方图件受版权保护，未纳入本仓库。
 
-## English TL;DR
+## 11. 许可
 
-**TDDO** is a truck-drone delivery optimizer: given customers with time windows and time-dependent
-circular no-fly zones, it schedules truck routes, drone sorties (where to launch and recover) and
-battery logistics, minimizing electricity + fuel + driver hours.
+MIT License，详见 [`LICENSE`](LICENSE)。
 
-The MILP has 79 constraints; it is solved at realistic scale by a custom ALNS, with Gurobi used to
-certify small instances. On 16 instances × 10 seeds the plan is 15.9% cheaper than truck-only and
-51.4% below the initial feasible solution; 100 customers take 124–187 s.
+---
 
-One modelling point: splitting the single recover-or-launch flag into separate arrival and departure
-variables lowers the proven optimum on 4/4 small instances, by 1.5%–3.4% depending on swap duration,
-battery stock and instance form. Details in `docs/`.
+## Abstract (English)
 
-MIT License · 见 [`LICENSE`](LICENSE)
+**TDDO** is an optimizer for truck–drone tandem delivery with time windows, bidirectional loads
+and time-dependent circular no-fly zones. Given a customer set with demands and time windows,
+it decides truck routes, drone sorties (launch and recovery nodes), launch times and battery
+logistics, minimizing drone electricity, truck fuel and driver hours.
+
+The model is a mixed-integer linear program with 79 constraints in seven families. Realistic
+instances are solved by a custom adaptive large neighbourhood search; Gurobi is used to certify
+small instances. On 16 instances (10–100 customers) × 10 seeds, the solution is 15.9% cheaper
+than a truck-only plan and 51.4% below the initial feasible solution; 100-customer instances
+take 124–187 s.
+
+Splitting the single recover-or-launch flag into separate arrival and departure variables lowers
+the proven optimum on 4 of 4 small instances (−0.17% to −4.33%, all at 0% gap). The resulting
+cost reduction is conditional, ranging from 1.5% to 3.4% depending on swap duration, battery
+stock and instance form.
