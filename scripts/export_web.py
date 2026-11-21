@@ -460,6 +460,258 @@ selectAll(); renderList(); draw(); setNote();
 """
 
 
+AMAP_HTML = """<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TDDO · 天河算例（高德 JS API）</title>
+<style>
+  html,body{margin:0;height:100%;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif;color:#222}
+  #map{position:absolute;inset:0}
+  .panel{position:absolute;top:12px;left:12px;z-index:999;background:#fff;border:1px solid #e3e3e3;
+         border-radius:10px;padding:12px 14px;width:330px;box-shadow:0 2px 14px rgba(0,0,0,.12);
+         max-height:calc(100% - 24px);display:flex;flex-direction:column}
+  .panel h1{font-size:15px;margin:0 0 8px}
+  .modes{display:flex;gap:6px;margin:2px 0 10px}
+  .modes button{flex:1;padding:5px 0;border:1px solid #d8d8d8;background:#fafafa;border-radius:6px;
+                cursor:pointer;font-size:12.5px;color:#444}
+  .modes button.on{background:#1F4E79;border-color:#1F4E79;color:#fff}
+  table.cmp{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+  table.cmp th,table.cmp td{padding:2px 3px;text-align:right;border-bottom:1px solid #f2f2f2}
+  table.cmp th:first-child,table.cmp td:first-child{text-align:left;color:#666}
+  table.cmp td.dn{color:#1E7B45}
+  table.cmp td.up{color:#B03A2E}
+  .bar{display:flex;gap:6px;margin:2px 0 8px}
+  .bar button{padding:3px 9px;font-size:12px;border:1px solid #d8d8d8;background:#fff;
+              border-radius:5px;cursor:pointer;color:#444}
+  .list{overflow:auto;flex:1;border-top:1px solid #f0f0f0;padding-top:6px;min-height:80px}
+  .row{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:12.5px}
+  .row.sub{margin-left:22px;color:#555;font-size:12px}
+  .sw{width:14px;border-top:4px solid #999;border-radius:2px;flex:none}
+  .sw.d{border-top-style:dashed}
+  .row label{display:flex;align-items:center;gap:6px;cursor:pointer;flex:1}
+  .solo{margin-left:auto;font-size:11px;color:#9aa;cursor:pointer;border:0;background:none}
+  .note{font-size:11px;color:#9a9a9a;margin-top:6px;line-height:1.5}
+  .legend{position:absolute;right:12px;bottom:12px;z-index:999;background:#fff;border:1px solid #e3e3e3;
+          border-radius:8px;padding:8px 11px;font-size:12px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .legend div{margin:3px 0;display:flex;align-items:center;gap:6px}
+</style></head>
+<body><div id="map"></div>
+<div class="panel">
+  <h1>天河算例 · 高德 JS API</h1>
+  <div class="modes">
+    <button data-mode="final" class="on">最终解</button>
+    <button data-mode="initial">初始解</button>
+    <button data-mode="overlay">叠加对比</button>
+  </div>
+  <table class="cmp" id="cmp"></table>
+  <div class="bar"><button id="all">全选</button><button id="none">全不选</button><button id="inv">反选</button></div>
+  <div class="list" id="list"></div>
+  <div class="note" id="note"></div>
+</div>
+<div class="legend">
+  <div><span class="sw" style="border-top-color:#1F4E79"></span>卡车（实线，带方向）</div>
+  <div><span class="sw d" style="border-top-color:#E67E22"></span>无人机架次（虚线）</div>
+  <div><span class="sw d" style="border-top-color:#9AA0A6"></span>初始解（灰色）</div>
+</div>
+<script>
+const DATA = __DATA__, KEY = "__KEY__", SECRET = "__SECRET__";
+window._AMapSecurityConfig = { securityJsCode: SECRET };
+const s = document.createElement('script');
+s.src = 'https://webapi.amap.com/maps?v=2.0&key=' + encodeURIComponent(KEY) + '&plugin=AMap.Scale,AMap.ToolBar';
+s.onload = () => init();
+s.onerror = () => { document.getElementById('map').innerHTML =
+  '<div style="padding:24px;color:#B03A2E">高德 JS API 加载失败：检查 Key 类型（Web端 JS API）、安全密钥与域名白名单。</div>'; };
+document.head.appendChild(s);
+
+const PAL = ['#1F4E79','#2E7D5A','#8E5A9E','#B26A00','#2A6F7F','#7A4E2D','#4A5FA5','#7D6B3F'];
+const DASH = [[7,6],[3,5],[12,5,3,5],[2,6]];
+let mode = 'final', selT = new Set(), selS = new Set();
+let map, info, overlays = [];
+
+function init() {
+  map = new AMap.Map('map', { zoom: 13, center: DATA.depot, viewMode: '2D',
+    mapStyle: 'amap://styles/normal' });
+  map.addControl(new AMap.Scale());
+  map.addControl(new AMap.ToolBar({ position: { right: '18px', top: '120px' } }));
+  info = new AMap.InfoWindow({ offset: new AMap.Pixel(0, -14), isCustom: false });
+
+  buildCmp(); selectAll(); renderListChildren(); render(); bindUI();
+  document.getElementById('note').textContent =
+    '当前显示 ALNS 最终解。勾选左侧可只保留部分卡车/架次；卡车线带方向箭头。';
+}
+
+function buildCmp() {
+  const I = DATA.initial, F = DATA.final;
+  const num = v => (Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(1));
+  const rows = [
+    ['成本', I.cost, F.cost, true],
+    ['使用卡车', I.n_trucks_used, F.n_trucks_used, false],
+    ['架次数', I.n_sorties, F.n_sorties, false],
+    ['无人机服务', I.drone_served, F.drone_served, false],
+    ['完工 (h)', I.makespan_s / 3600, F.makespan_s / 3600, true],
+  ];
+  document.getElementById('cmp').innerHTML = '<tr><th>指标</th><th>初始</th><th>最终</th><th>变化</th></tr>' +
+    rows.map(([k, a, b, pct]) => {
+      const d = b - a, rel = a ? d / Math.abs(a) * 100 : 0;
+      const cls = d < 0 ? 'dn' : (d > 0 ? 'up' : '');
+      const txt = d === 0 ? '—' : (pct ? `${rel > 0 ? '+' : ''}${rel.toFixed(1)}%` : `${d > 0 ? '+' : ''}${d}`);
+      return `<tr><td>${k}</td><td>${num(a)}</td><td><b>${num(b)}</b></td><td class="${cls}">${txt}</td></tr>`;
+    }).join('');
+}
+
+const current = () => (mode === 'initial' ? DATA.initial.routes : DATA.final.routes);
+
+function selectAll() {
+  const rs = current();
+  selT = new Set(rs.map((_, i) => 't' + i));
+  selS = new Set();
+  rs.forEach((r, i) => r.sorties.forEach((_, j) => selS.add(`t${i}s${j}`)));
+}
+
+function renderListChildren() {
+  renderList();
+}
+
+function renderList() {
+  const rs = current(), box = document.getElementById('list');
+  box.innerHTML = rs.map((r, i) => {
+    const col = PAL[i % PAL.length];
+    const sub = r.sorties.map((s, j) => {
+      const key = `t${i}s${j}`;
+      return `<div class="row sub"><span class="sw d" style="border-top-color:${col}"></span>
+        <label><input type="checkbox" data-k="${key}" ${selS.has(key) ? 'checked' : ''}>
+        架次 ${j + 1} · ${s.customers.length} 客户</label></div>`;
+    }).join('');
+    return `<div class="row"><span class="sw" style="border-top-color:${col}"></span>
+      <label><input type="checkbox" data-t="${i}" ${selT.has('t' + i) ? 'checked' : ''}>
+      卡车 ${r.truck} · ${r.nodes.length - 2} 停靠 · ${r.sorties.length} 架次</label>
+      <button class="solo" data-solo="${i}">只看</button></div>${sub}`;
+  }).join('') || '<div class="note">该解没有可用路线</div>';
+
+  box.querySelectorAll('input[data-t]').forEach(el => el.onchange = e => {
+    const i = +e.target.dataset.t, on = e.target.checked;
+    if (on) selT.add('t' + i); else selT.delete('t' + i);
+    current()[i].sorties.forEach((_, j) => {
+      const k = `t${i}s${j}`;
+      if (on) selS.add(k); else selS.delete(k);
+    });
+    renderList(); render();
+  });
+  box.querySelectorAll('input[data-k]').forEach(el => el.onchange = e => {
+    const k = e.target.dataset.k;
+    if (e.target.checked) selS.add(k); else selS.delete(k);
+    render();
+  });
+  box.querySelectorAll('button[data-solo]').forEach(el => el.onclick = e => {
+    const i = +e.currentTarget.dataset.solo;
+    selT = new Set(['t' + i]);
+    selS = new Set(current()[i].sorties.map((_, j) => `t${i}s${j}`));
+    renderList(); render();
+  });
+}
+
+function clearOverlays() {
+  if (overlays.length) { map.remove(overlays); overlays = []; }
+}
+
+function add(o) { overlays.push(o); return o; }
+
+function render() {
+  clearOverlays();
+  if (mode === 'overlay') { drawSol(DATA.initial, true, true); drawSol(DATA.final, false, false); }
+  else drawSol(mode === 'initial' ? DATA.initial : DATA.final, false, false);
+  drawFixed();
+  if (overlays.length) map.setFitView(overlays, false, [50, 50, 50, 50]);
+}
+
+function drawSol(sol, ghost, ignoreSel) {
+  sol.routes.forEach((r, i) => {
+    if (!ignoreSel && !selT.has('t' + i)) return;
+    const col = ghost ? '#9AA0A6' : PAL[i % PAL.length];
+    const line = add(new AMap.Polyline({
+      path: r.path, strokeColor: col, strokeWeight: ghost ? 3 : 5,
+      strokeOpacity: ghost ? .85 : .95, strokeStyle: ghost ? 'dashed' : 'solid',
+      strokeDasharray: ghost ? [6, 6] : undefined, lineJoin: 'round',
+      showDir: !ghost, zIndex: ghost ? 40 : 55,
+    }));
+    line.on('mouseover', e => info.open(map, e.lnglat,
+      `${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · ${r.nodes.length - 2} 停靠 · ${r.sorties.length} 架次`));
+    line.setMap(map);
+
+    if (!ghost) {
+      const mid = r.path[Math.floor(r.path.length / 2)];
+      add(new AMap.Text({ text: String(i + 1), position: mid, offset: new AMap.Pixel(-9, -9),
+        style: { background: col, color: '#fff', border: '1.5px solid #fff', borderRadius: '9px',
+                 padding: '1px 4px', fontSize: '11px', fontWeight: '600' }, zIndex: 90 }));
+    }
+
+    r.sorties.forEach((s, j) => {
+      if (!ignoreSel && !selS.has(`t${i}s${j}`)) return;
+      const pl = add(new AMap.Polyline({
+        path: s.path, strokeColor: ghost ? '#9AA0A6' : col, strokeWeight: 2.5,
+        strokeOpacity: 1, strokeStyle: 'dashed',
+        strokeDasharray: ghost ? [3, 4] : DASH[j % DASH.length], zIndex: 70,
+      }));
+      pl.on('mouseover', e => info.open(map, e.lnglat,
+        `${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户`));
+      pl.setMap(map);
+      if (!ghost) {
+        add(new AMap.CircleMarker({ center: s.path[0], radius: 4.5, strokeColor: col,
+          strokeWeight: 2, fillColor: '#fff', fillOpacity: 1, zIndex: 80 }));
+        add(new AMap.CircleMarker({ center: s.path[s.path.length - 1], radius: 4.5,
+          strokeColor: '#fff', strokeWeight: 1.5, fillColor: col, fillOpacity: 1, zIndex: 80 }));
+      }
+    });
+  });
+}
+
+function drawFixed() {
+  DATA.nfz.forEach(z => add(new AMap.Circle({ center: z.center, radius: z.r,
+    strokeColor: '#C0392B', strokeWeight: 1, fillColor: '#C0392B', fillOpacity: .12, zIndex: 30 })));
+  add(new AMap.CircleMarker({ center: DATA.depot, radius: 7, strokeColor: '#fff',
+    strokeWeight: 2.5, fillColor: '#111', fillOpacity: 1, zIndex: 95 }));
+  DATA.customers.forEach(p => add(new AMap.CircleMarker({ center: p, radius: 3.4,
+    strokeColor: '#fff', strokeWeight: 1, fillColor: '#C0392B', fillOpacity: .95, zIndex: 85 })));
+  overlays.forEach(o => o.setMap ? o.setMap(map) : map.add(o));
+}
+
+function bindUI() {
+  const note = document.getElementById('note');
+  document.querySelectorAll('.modes button').forEach(b => b.onclick = () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('.modes button').forEach(x => x.classList.toggle('on', x === b));
+    selectAll(); renderList(); render();
+    note.textContent = mode === 'overlay'
+      ? '叠加：灰色虚线是初始解，彩色实线是最终解；勾选只作用于最终解。'
+      : mode === 'initial' ? '当前显示初始可行解（未优化）。' : '当前显示 ALNS 最终解。';
+  });
+  document.getElementById('all').onclick = () => { selectAll(); renderList(); render(); };
+  document.getElementById('none').onclick = () => { selT.clear(); selS.clear(); renderList(); render(); };
+  document.getElementById('inv').onclick = () => {
+    const rs = current();
+    selT = new Set(rs.map((_, i) => 't' + i).filter(k => !selT.has(k)));
+    rs.forEach((r, i) => r.sorties.forEach((_, j) => {
+      const k = `t${i}s${j}`;
+      if (selS.has(k)) selS.delete(k); else selS.add(k);
+    }));
+    renderList(); render();
+  };
+}
+</script></body></html>
+"""
+
+
+def write_amap_html(payload: dict, key: str, secret: str) -> Path:
+    """生成调用高德 JS API 的页面。**含 Key，必须 gitignore，不要提交。**"""
+    WEB.mkdir(parents=True, exist_ok=True)
+    html = (AMAP_HTML
+            .replace("__DATA__", json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+            .replace("__KEY__", key).replace("__SECRET__", secret))
+    out = WEB / f"tddo_map_set{payload['set']}_amap.html"
+    out.write_text(html, encoding="utf-8")
+    return out
+
+
 def write_html(payload: dict) -> Path:
     WEB.mkdir(parents=True, exist_ok=True)
     html = HTML.replace("__DATA__", json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
@@ -476,6 +728,8 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--iters", type=int, default=2000)
     ap.add_argument("--static", action="store_true", help="同时用 Web服务 Key 出静态图")
+    ap.add_argument("--amap-js", action="store_true",
+                    help="额外生成高德 JS API 版本（读 AMAP_JS_KEY / AMAP_JS_SECRET，产物不入库）")
     a = ap.parse_args()
 
     print("求解并导出…")
@@ -483,6 +737,13 @@ def main() -> None:
     print(f"  初始解 {payload['initial']['cost']} → 最终解 {payload['final']['cost']}")
     html = write_html(payload)
     print(f"  {html.relative_to(PROJECT_ROOT)}")
+    if a.amap_js:
+        jk, js = os.environ.get("AMAP_JS_KEY"), os.environ.get("AMAP_JS_SECRET")
+        if not (jk and js):
+            print("  未设置 AMAP_JS_KEY / AMAP_JS_SECRET，跳过 JS API 版本")
+        else:
+            out = write_amap_html(payload, jk, js)
+            print(f"  {out.relative_to(PROJECT_ROOT)}（含 Key，已 gitignore）")
     if a.static:
         key = os.environ.get("AMAP_KEY")
         if not key:

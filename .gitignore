@@ -50,3 +50,6 @@ _local/
 
 # 天河路网原始抓取（40 MB，可由 scripts.build_tianhe --step fetch 重下）
 data/tianhe/tiles/
+
+# 高德 JS API 页面含 Key / 安全密钥，仅本地生成，不入库
+docs/web/*_amap.html
