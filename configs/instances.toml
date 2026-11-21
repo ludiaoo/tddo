@@ -119,3 +119,46 @@ n_customers = 100
 city = "buffalo"
 depot = "edge"
 problems = ["20170606T131220449002"]
+
+# ---------------------------------------------------------------- 天河真实路网（M9.23）
+#
+# 由 `python -m scripts.build_tianhe` 生成：把西雅图算例等比缩放搬到广州天河，
+# 卡车距离/时间换成天河 OSM 路网的最短路（有向，含单行线），无人机仍是欧氏距离。
+# `source = "tianhe"` 让 `build_instance` 去读 `data/tianhe/base_<base>.json`。
+# 编号从 101 起，避免与西雅图/布法罗的 1–16 混用。
+
+[[sets]]
+id = 101
+n_customers = 10
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set01"
+problems = ["20170608T121651164057"]
+
+[[sets]]
+id = 102
+n_customers = 25
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set05"
+problems = ["20170606T181516057642"]
+
+[[sets]]
+id = 103
+n_customers = 50
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set09"
+problems = ["20170606T114145593946"]
+
+[[sets]]
+id = 104
+n_customers = 100
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set13"
+problems = ["20170606T120227545709"]

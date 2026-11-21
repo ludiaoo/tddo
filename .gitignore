@@ -47,3 +47,6 @@ results/*_quick.csv
 
 # 本地的会话交接与私人笔记（不入库）
 _local/
+
+# 天河路网原始抓取（40 MB，可由 scripts.build_tianhe --step fetch 重下）
+data/tianhe/tiles/

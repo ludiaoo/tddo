@@ -39,7 +39,8 @@ DOCS = ["README.md", "LICENSE", "CITATION.cff", ".github/workflows/ci.yml",
         "docs/项目书.md", "docs/成果整合.md", "docs/求职_项目经历.md",
         "docs/工程手册.md",
         "docs/设计笔记/README.md", "docs/设计笔记/结论总览.md",
-        "docs/设计笔记/W1_换电模型设计.md"]
+        "docs/设计笔记/W1_换电模型设计.md",
+        "docs/设计笔记/M9.23_天河真实路网算例.md"]
 
 
 def _count(pattern: str) -> tuple[int, int]:

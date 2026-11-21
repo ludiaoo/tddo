@@ -161,8 +161,13 @@ def test_车队规模不小于容量下界(set_cfg):
 
 
 def test_整体规模与论文对齐():
-    """节点规模必须是 10/25/50/100，各 4 个，对应 Table 3 的 Set 1–16。"""
-    counts = [s["n_customers"] for s in SETS]
+    """节点规模必须是 10/25/50/100，各 4 个，对应 Table 3 的 Set 1–16。
+
+    只校验基准算例（id ≤ 16）；天河真实路网算例（id ≥ 101）是另一套数据，
+    规模分布不同，见 `M9.23`。
+    """
+    bench = [s for s in SETS if s["id"] <= 16]
+    counts = [s["n_customers"] for s in bench]
     assert counts == [10] * 4 + [25] * 4 + [50] * 4 + [100] * 4
-    assert [s["id"] for s in SETS] == list(range(1, 17))
-    assert len({s["problems"][0] for s in SETS}) == 16, "16 个 Set 不应重复使用同一原始算例"
+    assert [s["id"] for s in bench] == list(range(1, 17))
+    assert len({s["problems"][0] for s in bench}) == 16, "16 个 Set 不应重复使用同一原始算例"

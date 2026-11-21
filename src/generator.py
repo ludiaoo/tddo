@@ -149,12 +149,25 @@ def _fleet_size(
     return int(min(max(k, lo), hi))
 
 
-def build_instance(set_cfg: dict, cfg: dict) -> Instance:
+def build_instance(set_cfg: dict, cfg: dict, base=None) -> Instance:
+    """构造一个算例。
+
+    `base` 为 None 时按 `set_cfg["problems"]` 读 mFSTSP 原始底图（默认路径，与历史结果逐位一致）；
+    传入 `BaseProblem` 时改用外来底图（如天河真实路网，见 `src/io_tianhe.py`），
+    其余（需求、取件、时间窗、禁飞区、车队规模）仍由同一套规则生成。
+    """
     params = FleetParams.from_config(cfg)
     gen = cfg["generation"]
     fs = cfg["fleet_size"]
 
-    base = load_base_problem(set_cfg["problems"][0], set_cfg["city"])
+    if base is None:
+        if set_cfg.get("source") == "tianhe":
+            # 天河真实路网（M9.23）：底图由 scripts/build_tianhe.py 预生成，
+            # 其余生成规则与西雅图算例完全一致，所以两套算例可直接横向比较
+            from .io_tianhe import load_tianhe_base
+            base = load_tianhe_base(set_cfg["base"])
+        else:
+            base = load_base_problem(set_cfg["problems"][0], set_cfg["city"])
     seed = int(gen["seed"]) + int(set_cfg["id"])
     rng = np.random.default_rng(seed)
 
