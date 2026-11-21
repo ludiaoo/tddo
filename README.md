@@ -2,7 +2,7 @@
 
 **卡车—无人机联合配送优化器**（Truck–Drone Delivery Optimizer）
 
-![tests](https://img.shields.io/badge/tests-292%20%28282%20fast%20%2B%2010%20Gurobi%29-brightgreen)
+![tests](https://img.shields.io/badge/tests-300%20%28290%20fast%20%2B%2010%20Gurobi%29-brightgreen)
 ![python](https://img.shields.io/badge/python-3.13-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![full run](https://img.shields.io/badge/full%20run-1.6%20h-orange)
@@ -160,6 +160,11 @@ Gurobi 求到最优。实验覆盖 16 个算例（10–100 客户）× 10 个随
 得到，天河需要重跑，两者不可混用。算例由 `python -m scripts.build_tianhe` 生成，
 五项体检（连通性/三角不等式/对称偏差/绕行倍数/对角为零）全部通过。
 
+底图来源做过交叉校验：用高德 Web 服务 API 对 1 100 个 OD 抽样比对，5 km 以上距离中位相差 **3%**、
+但尾部很宽（P10 0.65 / P90 1.60），短距离因起终点语义不同不可比；时间口径差别更大
+（高德含实时路况，中位是本项目自由流口径的 1.84 倍）。另外保留了一个高德矩阵变体 `set112`
+用于对照（同布局、只换矩阵来源，车队从 4 辆变 6 辆、成本 +37%），默认数据源仍是可复现的 OSM。
+
 ## 5. 安装
 
 环境要求：Python 3.13；精确求解需 Gurobi 9.5 及以上版本及有效许可证。
@@ -190,7 +195,7 @@ python -m scripts.reproduce --quick
 python -m scripts.reproduce
 
 # 单元测试
-pytest -q -m "not slow"
+pytest -q -m "not slow"    # 290 项快速测试
 ```
 
 单组实验通过 `python -m scripts.bench --exp <实验名>` 运行，常用参数如下：
@@ -217,9 +222,9 @@ configs/          模型与算例参数（TOML）
 data/instances/   16 个基准算例 + 4 个天河算例（JSON）
 data/tianhe/      天河底图矩阵与抓取元数据（原始路网不入库）
 data/raw/         算例底图数据（未纳入版本控制）
-src/              模型与算法，27 个模块，约 5.9k 行
-scripts/          实验、诊断、绘图、算例构建与自检，37 个脚本，约 6.0k 行
-tests/            26 个测试文件，292 项测试
+src/              模型与算法，28 个模块，约 6.0k 行
+scripts/          实验、诊断、绘图、算例构建与自检，38 个脚本，约 6.2k 行
+tests/            27 个测试文件，300 项测试
 results/          60 份结果表（3 402 次求解）与主图
 docs/             项目设计、成果报告、工程手册、设计笔记
 ```

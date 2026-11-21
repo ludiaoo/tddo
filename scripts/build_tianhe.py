@@ -277,14 +277,14 @@ def _matrices(snapped: list[int], coord, edges, keep, idx) -> tuple[np.ndarray, 
 
 # ---------------------------------------------------------------- build
 
-def build(only: set[int] | None = None) -> None:
+def build(only: set[int] | None = None, matrix: str = "osm") -> None:
     coord, edges = load_graph()
     keep, idx = _largest_scc(len({e[0] for e in edges} | {e[1] for e in edges}), edges)
     cfg = load_config()
     by_id = {s["id"]: s for s in load_sets()}
 
     for src_id, new_id in MAPPING.items():
-        if only and new_id not in only:
+        if only and src_id not in only:
             continue
         src_cfg = by_id[src_id]
         base0 = load_base_problem(src_cfg["problems"][0], src_cfg["city"])
@@ -304,19 +304,30 @@ def build(only: set[int] | None = None) -> None:
                 print(f"  Set{src_id}: {ex}，scale × 0.85 重试")
                 scale *= 0.85
 
-        dist, tim = _matrices(snapped, coord, edges, keep, idx)
+        snapped_latlon = np.array([coord[o] for o in snapped])
+        if matrix == "amap":
+            from src.amap import distance_matrix
+            print(f"  Set{src_id}: 走高德（{len(snapped)} 个点，{len(snapped)} 次请求）")
+            dist, tim = distance_matrix([(float(x[1]), float(x[0])) for x in snapped_latlon],
+                                        verbose=False)
+        else:
+            dist, tim = _matrices(snapped, coord, edges, keep, idx)
         if not np.isfinite(dist).all() or not np.isfinite(tim).all():
             bad = int((~np.isfinite(dist)).sum() + (~np.isfinite(tim)).sum())
             raise SystemExit(f"Set{src_id}: 矩阵有 {bad} 个不可达 OD")
 
-        lat0, lon0 = placed[0]
+        # 节点坐标取「吸附后」的路口坐标：否则卡车矩阵按吸附点算、无人机欧氏按放置点算，
+        # 两边差一个吸附偏移（均值 61–80 m，最大 300+ m），模型自相矛盾。
+        lat0, lon0 = snapped_latlon[0]
         nodes = tuple(
-            Node(idx=i, kind=base0.nodes[i].kind, lat=float(placed[i, 0]), lon=float(placed[i, 1]),
-                 x=to_local_xy(float(placed[i, 0]), float(placed[i, 1]), lat0, lon0)[0],
-                 y=to_local_xy(float(placed[i, 0]), float(placed[i, 1]), lat0, lon0)[1])
-            for i in range(len(placed))
+            Node(idx=i, kind=base0.nodes[i].kind, lat=float(snapped_latlon[i, 0]),
+                 lon=float(snapped_latlon[i, 1]),
+                 x=to_local_xy(float(snapped_latlon[i, 0]), float(snapped_latlon[i, 1]), lat0, lon0)[0],
+                 y=to_local_xy(float(snapped_latlon[i, 0]), float(snapped_latlon[i, 1]), lat0, lon0)[1])
+            for i in range(len(snapped_latlon))
         )
-        name = f"set{src_id:02d}"
+        name = f"set{src_id:02d}" + ("" if matrix == "osm" else "_amap")
+        out_id = new_id if matrix == "osm" else new_id + 10
         base = BaseProblem(name=name, city="tianhe", nodes=nodes, truck_dist_m=dist,
                            truck_time_s=tim, parcel_kg=base0.parcel_kg)
 
@@ -327,7 +338,8 @@ def build(only: set[int] | None = None) -> None:
             "truck": {"dist_m": dist.tolist(), "time_s": tim.tolist()},
             "parcel_kg": list(base.parcel_kg),
             "meta": {
-                "source_set": src_id, "new_set": new_id,
+                "source_set": src_id, "new_set": out_id, "matrix": matrix,
+                "amap_fetched_at": (time.strftime("%Y-%m-%d %H:%M:%S") if matrix == "amap" else None),
                 "map": "OpenStreetMap via Overpass API", "bbox": list(BBOX),
                 "speed_factor": SPEED_FACTOR, "speed_kmh": SPEED_KMH,
                 "transform": {"scale": round(float(scale), 5), "rotate_deg": 0.0,
@@ -340,14 +352,14 @@ def build(only: set[int] | None = None) -> None:
         }, TIANHE / f"base_{name}.json")
 
         # 用同一套生成规则造算例（需求/取件/时间窗/禁飞区/车队规模），只是 base 换成天河
-        set_cfg = {"id": new_id, "city": "tianhe", "problems": [src_cfg["problems"][0]],
+        set_cfg = {"id": out_id, "city": "tianhe", "problems": [src_cfg["problems"][0]],
                    "n_customers": base0.n_customers, "depot": src_cfg.get("depot", "center"),
                    "source": "tianhe", "base": name}
         inst = build_instance(set_cfg, cfg, base=base)
-        dump_json(instance_to_dict(inst), INSTANCES / f"set{new_id}.json")
+        dump_json(instance_to_dict(inst), INSTANCES / f"set{out_id}.json")
         span = float(np.hypot(*(np.array([[n.x, n.y] for n in nodes]).max(0)
                                 - np.array([[n.x, n.y] for n in nodes]).min(0)))) / 1000
-        print(f"  Set{src_id} → Set{new_id}: {base0.n_customers} 客户, 跨度 {span:.1f} km, "
+        print(f"  Set{src_id} → Set{out_id}: {base0.n_customers} 客户, 跨度 {span:.1f} km, "
               f"truck 距离中位 {np.median(dist[dist > 0]) / 1000:.2f} km, "
               f"吸附 均值 {np.mean(offs):.0f} m / 最大 {np.max(offs):.0f} m")
 
@@ -426,7 +438,9 @@ def plot(which: int = 104) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description="天河真实路网算例构建")
     ap.add_argument("--step", choices=["fetch", "build", "check", "plot", "all"], default="all")
-    ap.add_argument("--only", default=None, help="只重建这些新编号，逗号分隔（如 101,102）")
+    ap.add_argument("--only", default=None, help="只重建这些源编号，逗号分隔（如 1,5）")
+    ap.add_argument("--matrix", choices=["osm", "amap"], default="osm",
+                    help="卡车矩阵来源：osm（默认，可复现）或 amap（需 AMAP_KEY，含实时路况）")
     a = ap.parse_args()
     only = {int(x) for x in a.only.split(",")} if a.only else None
     if a.step in ("fetch", "all"):
@@ -434,7 +448,7 @@ def main() -> None:
         fetch()
     if a.step in ("build", "all"):
         print("[2/4] 建图并生成算例")
-        build(only)
+        build(only, a.matrix)
     if a.step in ("check", "all"):
         print("[3/4] 体检")
         check()

@@ -67,3 +67,23 @@ def test_无人机距离与坐标一致() -> None:
 def test_缺底图时报错明确(tmp_path) -> None:
     with pytest.raises(FileNotFoundError, match="build_tianhe"):
         load_tianhe_base("set99", data_dir=tmp_path)
+
+
+def test_高德变体与OSM版本同布局() -> None:
+    """set112 与 set102 是同一套布局、只换矩阵来源：节点坐标应完全一致，距离不同。"""
+    if "set05_amap" not in list_tianhe_bases():
+        pytest.skip("未生成高德变体（需要 AMAP_KEY）")
+    a, b = load_tianhe_base("set05"), load_tianhe_base("set05_amap")
+    assert len(a.nodes) == len(b.nodes)
+    assert np.allclose([[n.lat, n.lon] for n in a.nodes], [[n.lat, n.lon] for n in b.nodes])
+    assert not np.allclose(a.truck_dist_m, b.truck_dist_m), "两个版本矩阵完全相同，开关没生效"
+    assert b.truck_dist_m.shape[0] == len(b.nodes)
+
+
+def test_高德变体算例可构造() -> None:
+    if "set05_amap" not in list_tianhe_bases():
+        pytest.skip("未生成高德变体")
+    cfg_set = next(s for s in TIANHE_SETS if s["id"] == 112)
+    inst = build_instance(cfg_set, CFG)
+    assert inst.base.name == "set05_amap"
+    assert inst.n_customers == 25

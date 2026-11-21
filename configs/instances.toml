@@ -162,3 +162,14 @@ depot = "center"
 source = "tianhe"
 base = "set13"
 problems = ["20170606T120227545709"]
+
+# 高德矩阵变体（M9.23）：与 set102 同布局，但卡车距离/时间来自高德 v3/distance。
+# 口径是「2026-11-21 15:2x 的路况快照」，不可复现；只用于对照与演示，默认仍用 OSM 版本。
+[[sets]]
+id = 112
+n_customers = 25
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set05_amap"
+problems = ["20170606T181516057642"]
