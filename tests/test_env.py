@@ -65,7 +65,7 @@ def test_缺失时给出可执行的报错() -> None:
 
 
 def test_脱敏只留首尾() -> None:
-    assert mask("abcd1234efgh5678ijkl9012") == "c276…d3a8"
+    assert mask("abcd1234efgh5678ijkl9012") == "abcd…9012"
     assert mask("short") == "*****"
     assert mask(None) == "(空)"
 
@@ -85,9 +85,12 @@ def test_密钥文件被git忽略() -> None:
     assert re.search(r"^!\.env\.example$", ignore, re.M), ".env.example 应被显式放行"
 
 
-@pytest.mark.parametrize("folder", ["src", "scripts"])
+@pytest.mark.parametrize("folder", ["src", "scripts", "tests"])
 def test_源码里没有硬编码的32位密钥(folder: str) -> None:
-    """高德 key 是 32 位十六进制；出现在源码里就是硬编码。"""
+    """高德 key 是 32 位十六进制；出现在源码（含测试）里就是硬编码。
+
+    `tests/` 也要扫：这条测试本身曾经把真实 key 当样例写进去过，属于同一类疏漏。
+    """
     hits = []
     for p in (PROJECT_ROOT / folder).rglob("*.py"):
         for i, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
