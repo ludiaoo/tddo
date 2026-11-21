@@ -1,4 +1,4 @@
-"""把天河算例的解导出成数据，再交给 `amap-dispatch-map` skill 出图。
+"""把天河算例的解导出成数据，再交给 `or-research` skill 内置的 amap 模块出图。
 
 本项目只负责两件项目特有的事：
 
@@ -10,8 +10,8 @@
 维护第二份 HTML 模板：
 
     solution_set<N>.json
-      → skill/scripts/adapt_tddo.py    解 → payload（含架次端点守门）
-      → skill/scripts/build_map.py     高德静态底图 + 页面
+      → skill/amap/scripts/adapt_tddo.py    解 → payload（含架次端点守门）
+      → skill/amap/scripts/build_map.py     高德静态底图 + 页面
 
 用法：
 
@@ -19,8 +19,8 @@
     python -m scripts.export_web --set 112 --amap-js   # 额外出可拖拽版（含 JS key，不入库）
     python -m scripts.export_web --set 112 --static    # 额外出带线路的静态 PNG
 
-skill 默认在 `~/.workbuddy/skills/amap-dispatch-map`；换位置可用环境变量
-`AMAP_DISPATCH_MAP_SKILL` 指向新目录。
+skill 默认在 `~/.workbuddy/skills/or-research`，地图模块是它的 `amap/` 子目录；
+换位置可用环境变量 `OR_RESEARCH_MAP_DIR` 直接指向该模块目录。
 """
 
 from __future__ import annotations
@@ -50,8 +50,8 @@ from src.solution import Solution
 
 WEB = PROJECT_ROOT / "docs" / "web"
 FIGS = PROJECT_ROOT / "results" / "figs"
-SKILL_DIR = Path(os.environ.get("AMAP_DISPATCH_MAP_SKILL") or
-                 Path.home() / ".workbuddy" / "skills" / "amap-dispatch-map")
+SKILL_DIR = Path(os.environ.get("OR_RESEARCH_MAP_DIR") or
+                 Path.home() / ".workbuddy" / "skills" / "or-research" / "amap")
 
 
 # ---------------------------------------------------------------- 路网
@@ -244,8 +244,8 @@ def _run_skill(script: str, *args) -> None:
     if not path.is_file():
         raise SystemExit(
             f"找不到 skill 脚本：{path}\n"
-            "  安装：把 amap-dispatch-map 放到 ~/.workbuddy/skills/，"
-            "或设置 AMAP_DISPATCH_MAP_SKILL 指向它的目录。")
+            "  安装：把 or-research 放到 ~/.workbuddy/skills/（地图模块在它的 amap/ 子目录），"
+            "或设置 OR_RESEARCH_MAP_DIR 指向该模块目录。")
     subprocess.run([sys.executable, str(path), *[str(a) for a in args]],
                    cwd=PROJECT_ROOT, check=True)
 
@@ -309,7 +309,7 @@ def static_map(payload: dict, key: str) -> Path | None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="导出解数据，并用 amap-dispatch-map skill 出高德底图")
+    ap = argparse.ArgumentParser(description="导出解数据，并用 or-research 的 amap 模块出高德底图")
     ap.add_argument("--set", type=int, default=112)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--iters", type=int, default=2000)
