@@ -346,9 +346,55 @@ def fig_d() -> None:
     print(f"  {out.relative_to(PROJECT_ROOT)}")
 
 
+# ---------------------------------------------------------------- 图 E
+
+def fig_e() -> None:
+    """换电耗时 → 收益。五个测点，标出 300 s 那个方向反常的点。"""
+    keys = _keys()
+    base = _load("bench_main.csv")
+    if base is None:
+        raise SystemExit("缺少 bench_main.csv")
+    base = base.merge(keys, on=["set", "seed"])
+    arms = [(0, "bench_hotswap.csv"), (60, "bench_sw60_hs.csv"), (120, "bench_sw120_hs.csv"),
+            (240, "bench_sw240_hs.csv"), (300, "bench_sw300_hs.csv")]
+
+    xs, ys, err_lo, err_hi = [], [], [], []
+    for sec, name in arms:
+        d = _load(name)
+        if d is None:
+            raise SystemExit(f"缺少 {name}")
+        pct = _pct(d.merge(keys, on=["set", "seed"]), base)
+        m, lo, hi = _ci(pct)
+        xs.append(sec / 60.0)          # 换成分钟，横轴更好读
+        ys.append(m)
+        err_lo.append(m - lo)
+        err_hi.append(hi - m)
+
+    fig, ax = plt.subplots(figsize=(3.9, 2.9))
+    ax.axhline(0, color="#333333", lw=0.8, ls="--")
+    ax.errorbar(xs, ys, yerr=[err_lo, err_hi], color=style.ACCENT, marker="o", ms=4,
+                lw=1.2, capsize=3, elinewidth=1.0, zorder=3)
+    ax.plot(xs[:4], ys[:4], color="#B0B0B0", lw=0.8, ls=":", zorder=2)
+    ax.annotate("300 s breaks the\ntrend (p=0.016)", xy=(5.0, ys[-1]), xytext=(3.1, ys[-1] - 0.9),
+                fontsize=6.8, color="#666666",
+                arrowprops=dict(arrowstyle="-|>", color="#999999", lw=0.8))
+    ax.set_xlabel("battery-swap duration (min)")
+    ax.set_ylabel("cost saving vs. no hot-swap (%)")
+    ax.set_title("Fig. E  Longer swaps eat the benefit", fontsize=9)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([f"{x:g}" for x in xs])
+    ax.grid(axis="x", visible=False)
+
+    fig.tight_layout()
+    out = FIGS / "figE_swap_time.png"
+    fig.savefig(out, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  {out.relative_to(PROJECT_ROOT)}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", default="A,B,C,D", help="只画指定几张，如 --only B C")
+    ap.add_argument("--only", default="A,B,C,D,E", help="只画指定几张，如 --only B C")
     args = ap.parse_args()
     style.apply(font_size=9.0)
     FIGS.mkdir(parents=True, exist_ok=True)
@@ -362,6 +408,8 @@ def main() -> None:
         fig_c()
     if "D" in want:
         fig_d()
+    if "E" in want:
+        fig_e()
     print("完成。")
 
 

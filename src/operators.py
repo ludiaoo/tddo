@@ -25,7 +25,9 @@ from .ml import features as ml_features
 from .ml.screen import LightGBMScreen
 from .solution import DEPOT, Route, Solution, route_from_specs, route_to_specs
 
-TOP_K = 6          # 粗排后真正做完整评估的候选数
+# 粗排后真正做完整评估的候选数（M9.22 §6 遗留项：这一直没单独测过）。
+# 1 = 纯贪心（只试粗排第一名），>6 = 更宽但更慢。默认 6，与历史行为逐位一致。
+TOP_K = int(os.environ.get("ALNS_TOP_K", "6"))
 # 无人机候选的全局预筛上限（M9.9）。0 = 关闭，与历史行为逐位一致。
 # 背景：卡车侧一直有 TOP_K 粗排，无人机侧没有——100 客户时每个客户要构造并评估
 # 约 125 条 trial 路线，占单次求解 69% 的时间（cProfile，Set13）。

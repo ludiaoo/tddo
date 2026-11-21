@@ -173,3 +173,30 @@ depot = "center"
 source = "tianhe"
 base = "set05_amap"
 problems = ["20170606T181516057642"]
+
+[[sets]]
+id = 111
+n_customers = 10
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set01_amap"
+problems = ["20170608T121651164057"]
+
+[[sets]]
+id = 113
+n_customers = 50
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set09_amap"
+problems = ["20170606T114145593946"]
+
+[[sets]]
+id = 114
+n_customers = 100
+city = "tianhe"
+depot = "center"
+source = "tianhe"
+base = "set13_amap"
+problems = ["20170606T120227545709"]

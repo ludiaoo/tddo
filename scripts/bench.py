@@ -68,7 +68,8 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
           sortie_span: int = 1, hover_power_kw: float = 0.0,
           spare_batteries: int = -1, battery_mass_kg: float = -1.0,
           swap_time: float = -1.0,
-          nfz_discount: float = -1.0, worst_window: float = -1.0) -> None:
+          nfz_discount: float = -1.0, worst_window: float = -1.0,
+          top_k: int = -1) -> None:
     """每个子进程只加载一次配置（读 16 个算例的元数据）。"""
     global _CFG, _SETS
     _CFG = load_config()
@@ -89,12 +90,14 @@ def _init(ml_screen: bool = False, op_policy: str = "adaptive",
         _CFG["fleet"]["battery_mass_kg"] = battery_mass_kg
     if swap_time >= 0.0:                   # M9.21：换电本身的耗时（<0 = 用配置值）
         _CFG["fleet"]["swap_s"] = swap_time
-    if nfz_discount >= 0.0 or worst_window > 0.0:   # M9.22：算子内部策略消融
+    if nfz_discount >= 0.0 or worst_window > 0.0 or top_k > 0:   # M9.22：算子内部策略消融
         import src.operators as _ops
         if nfz_discount >= 0.0:
             _ops.NFZ_DISCOUNT = nfz_discount
         if worst_window > 0.0:
             _ops.WORST_WINDOW = worst_window
+        if top_k > 0:                      # 卡车修复的候选预算（M9.22 §6 遗留项）
+            _ops.TOP_K = top_k
     _SETS = {s["id"]: s for s in load_sets()}
     if ml_screen:
         from src.ml import state
@@ -222,6 +225,8 @@ def main() -> None:
                     help="related 算子里禁飞区客户的距离权重（<0=用默认 0.6；1.0=关掉该偏好）")
     ap.add_argument("--worst-window", type=float, default=-1.0,
                     help="worst 算子的候选窗 = k×该系数（<0=用默认 1.0=严格取前 k；2.0=在前 2k 内随机）")
+    ap.add_argument("--top-k", type=int, default=-1,
+                    help="卡车修复的候选预算（<0=默认 6；1=纯贪心；12=更宽更慢）")
     ap.add_argument("--extra-destroy", default=None,
                     help="额外加载的破坏算子模块（src/<name>.py，需暴露 CANDIDATES），如 nfz_ops")
     ap.add_argument("--ml-screen", action="store_true",
@@ -277,7 +282,8 @@ def main() -> None:
                                            args.battery_mass,
                                            args.swap_time,
                                            args.nfz_discount,
-                                           args.worst_window)) as pool:
+                                           args.worst_window,
+                                           args.top_k)) as pool:
             futs = {pool.submit(_run, t): t for t in todo}
             for fut in as_completed(futs):
                 sid, seed, iters, _tune, _d, _dt = futs[fut]

@@ -109,6 +109,29 @@ def main() -> None:
                      "better": better, "worse": worse, "tie": tie,
                      "p": round(_sign_p(better, better + worse), 5)})
 
+    # ---------------- TOP_K（M9.22 §6 遗留项）----------------
+    print("\n## TOP_K：卡车修复的候选预算（全量 16×10，对 bench_main）")
+    print(f"{'变体':<10}{'均值':>9}{'中位':>9}{'更好/更差/平':>14}{'p':>9}{'CPU 比':>9}")
+    for tag, f, desc in (("topk1", "bench_abl_topk1.csv", "1 = 纯贪心"),
+                         ("topk12", "bench_abl_topk12.csv", "12 = 更宽")):
+        d = _load(f)
+        if d is None or main is None:
+            print(f"{tag:<10}（缺结果表）")
+            continue
+        m = d.merge(main, on=["set", "seed"], suffixes=("_a", "_b"))
+        pct = (m["best_cost_a"] - m["best_cost_b"]) / m["best_cost_b"] * 100.0
+        good = int((pct < -1e-9).sum())
+        bad = int((pct > 1e-9).sum())
+        tie = len(pct) - good - bad
+        cpu = m["cpu_s_a"].mean() / m["cpu_s_b"].mean()
+        print(f"{tag:<10}{pct.mean():>+8.2f}%{pct.median():>+8.2f}%"
+              f"{f'{good}/{bad}/{tie}':>14}{_sign_p(good, good + bad):>9.3g}{cpu:>8.2f}×")
+        rows.append({"variant": tag, "desc": desc, "n": len(pct),
+                     "mean_pct": round(float(pct.mean()), 3),
+                     "median_pct": round(float(pct.median()), 3),
+                     "better": good, "worse": bad, "tie": tie,
+                     "p": round(_sign_p(good, good + bad), 5)})
+
     if rows:
         out = RESULTS / "operator_ablation.csv"
         pd.DataFrame(rows).to_csv(out, index=False)

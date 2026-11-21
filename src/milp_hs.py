@@ -52,6 +52,7 @@ def solve_milp_hs(
     verbose: bool = False,
     allow_hotswap: bool = True,
     fix: Solution | None = None,
+    tight_ft: bool = False,
 ) -> HsResult:
     """求解「到达/出发拆分」的 MILP。`inst.nfz` 必须为空（与原模型同口径）。"""
     if inst.nfz:
@@ -332,6 +333,25 @@ def solve_milp_hs(
             == gp.quicksum(f[j] * (gp.quicksum(y[k, i, j] for i in C if i != j) - wr[k, j])
                            for j in C),
             name=f"ft_sum_{k}")
+
+    # ---------------- ft 的逐架次加强（`tight_ft`，默认关闭） ----------------
+    #
+    # 现状：`ft[k,i]` 只受两条约束——每条路线最多 `drone_capacity`（ft_cap），
+    # 以及全局 `Σ_i ft[k,i] = Σ_j f_j·(y-wr)`。于是模型可以在**某个更早的起飞点**
+    # 多卸一点货、让后面的架次少卸，而卡车在更早那段就"变轻"了。
+    #
+    # 这里加一条**有效**（不切掉任何可行解）的首跳切平面：无人机从 i 起飞时，
+    # 第一段弧 i→j 上带着的就是客户 j 的货，所以载荷不能小于 f_j。
+    # 全量版本（把 ft 与"该架次服务了哪些客户"逐架次绑定）需要引入架次—客户指派变量，
+    # 属于 W3 的模型重构，见 `docs/设计笔记/W1_换电模型设计.md` §8。
+    if tight_ft:
+        for k in KS:
+            for i in C:
+                m.addConstr(
+                    ft[k, i] >= gp.quicksum(f[j] * y[k, i, j] for j in C if j != i)
+                    - M_LOAD * (1 - wl[k, i]),
+                    name=f"ft_first_hop_{k}_{i}",
+                )
 
     # ---------------- 目标 ----------------
     m.setObjective(

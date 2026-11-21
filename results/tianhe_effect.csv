@@ -1,0 +1,12 @@
+﻿table,comparison,label,n,mean_pct,better,worse,p
+B,hs_vs_base,同节点换电 vs 基准,40,-2.128,35,5,0.0
+B,m2_vs_base,一车两机 vs 基准,40,-2.536,34,6,1e-05
+B,span3_vs_base,跨段单独用 vs 基准,40,-0.229,24,16,0.26819
+B,m2span3_vs_m2,跨段边际（m=2 臂内）,40,-0.176,15,15,1.0
+C,hs_vs_base,同节点换电 vs 基准,40,-2.437,26,4,6e-05
+C,m2_vs_base,一车两机 vs 基准,40,-2.476,25,5,0.00032
+C,m2span3_vs_m2,跨段边际（m=2 臂内）,40,-0.054,19,11,0.20049
+D,price_base,base：计电 vs 免费,40,1.675,9,31,0.00068
+D,price_hs,hs：计电 vs 免费,40,1.319,10,30,0.00222
+D,price_m2,m2：计电 vs 免费,40,1.711,7,33,4e-05
+D,price_m2span3,m2span3：计电 vs 免费,40,1.893,9,31,0.00068

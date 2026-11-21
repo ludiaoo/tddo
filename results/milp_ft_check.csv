@@ -1,0 +1,5 @@
+﻿set,n_customers,loose_cost,loose_status,loose_feasible,loose_n_sorties,tight_cost,tight_status,tight_feasible,tight_n_sorties,delta
+1,10,94.4471,optimal,True,2,94.4471,optimal,True,2,0.0
+2,10,115.2679,optimal,True,3,115.2679,optimal,True,3,0.0
+3,10,67.6454,optimal,True,2,67.6454,optimal,True,2,0.0
+4,10,73.256,optimal,True,2,73.256,optimal,True,2,0.0
