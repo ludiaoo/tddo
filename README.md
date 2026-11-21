@@ -2,7 +2,7 @@
 
 **卡车—无人机联合配送优化器**（Truck–Drone Delivery Optimizer）
 
-![tests](https://img.shields.io/badge/tests-323%20%28313%20fast%20%2B%2010%20Gurobi%29-brightgreen)
+![tests](https://img.shields.io/badge/tests-334%20%28324%20fast%20%2B%2010%20Gurobi%29-brightgreen)
 ![python](https://img.shields.io/badge/python-3.13-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![full run](https://img.shields.io/badge/full%20run-1.6%20h-orange)
@@ -175,9 +175,35 @@ Gurobi 求到最优。实验覆盖 16 个算例（10–100 客户）× 10 个随
 详见 [`docs/设计笔记/M9.24_天河重跑.md`](docs/设计笔记/M9.24_天河重跑.md)。
 
 解可以直接画在高德底图上：[`docs/web/tddo_map_set112.html`](docs/web/tddo_map_set112.html)
-（Leaflet + 高德栅格瓦片，无需 Key；卡车折线取自真实路网最短路，无人机架次为虚线直线）。
-页面支持按车/按架次勾选、全选与反选，以及在「初始解 / 最终解 / 叠加对比」三种视图之间切换；卡车停靠点、架次起飞点（圆环）与归队点（方块）分别标注，可看出无人机是在卡车**后面某一站**落回，而不是回起飞点。
-生成方式见 [`docs/设计笔记/M9.23_天河真实路网算例.md`](docs/设计笔记/M9.23_天河真实路网算例.md) §10。
+（高德静态底图内嵌，打开时不需要 Key；卡车折线取自真实路网最短路，无人机架次为虚线直线）。
+页面支持按车/按架次勾选、全选/清空/反选，以及在「初始解 / 最终解」之间切换；卡车停靠点、架次起飞点（圆环）与归队点（方块）分别标注，可看出无人机是在卡车**后面某一站**落回，而不是回起飞点。
+渲染统一复用 skill `amap-dispatch-map`（`adapt_tddo.py` 转 payload + `build_map.py` 出图），本项目只负责求解与解数据编码，不再维护第二份 HTML 模板；生成方式见
+[`docs/设计笔记/M9.23_天河真实路网算例.md`](docs/设计笔记/M9.23_天河真实路网算例.md) §10。
+
+### 4.5 外部基线（OR-Tools）
+
+为回答与开源求解器的对比，用 OR-Tools `RoutingModel` 在同一批算例上求解纯卡车 VRPTW
+子问题：节点、时间窗、有向路网矩阵、车数、服务时间与成本系数均与 `Instance` 一致，
+司机工时通过时间维度 span cost 计入（含时间窗等待），目标值与项目评估器重算值在 8/8 算例上差值为 0。
+该子问题**放松了取件载荷，且不表达无人机同步 / 换电 / 电量 / 禁飞区**，不能当作原问题的下界。
+
+| 对照 | 结果 |
+|---|---|
+| 西雅图 10 / 25 / 50 客户，OR-Tools vs ALNS 纯卡车 | 差异 ≤0.01% |
+| 西雅图 100 客户 | OR-Tools 略优 0.21%（40 s 限时） |
+| 天河 100 客户 | ALNS 纯卡车优 4.5%，且墙钟约 27 s < OR-Tools 40 s |
+| 全模型 vs 纯卡车（天河 100 客户） | 成本降低 10.7%；西雅图 16%–29% |
+
+复现：`python -m scripts.ortools_baseline`。原始表见 `results/ortools_baseline.csv`，
+口径与面试话术见 [`docs/求职_外部基线.md`](docs/求职_外部基线.md)。
+
+### 4.6 业务口径换算
+
+把 `set104` 映射为「天河片区一天 100 单冷链补货」（均单 6.7 kg、7 辆车、14 架次），
+按 `configs/config.toml` 的成本系数与显式汇率/排放假设换算：卡车 + 无人机 ¥22.85/单，
+纯卡车 ¥25.60/单，节省 **¥2.74/单（10.7%）**；司机工时占模型成本 81%，
+CO₂ 由 1.88 降至 1.42 kg/单。绝对值仅为量级示例，不构成报价；详见
+[`docs/求职_业务场景.md`](docs/求职_业务场景.md)。
 
 ## 5. 安装
 
@@ -199,8 +225,10 @@ python -m src.generator
 ### 5.1 API Key 配置（高德，可选）
 
 只有调用高德接口的功能需要 Key：`scripts/amap_check`（交叉校验）、
-`scripts.build_tianhe --matrix amap`（高德距离矩阵）、`scripts.export_web --static/--amap-js`
-（静态图与 JS API 页面）。其余功能（含 OSM 路网构建、全部求解与实验）都不需要。
+`scripts.build_tianhe --matrix amap`（高德距离矩阵）、`scripts.export_web`（出图时需要
+`AMAP_KEY` 拉静态底图；`--static` 额外出 PNG，`--amap-js` 额外出可拖拽版页面）。
+其余功能（含 OSM 路网构建、全部求解与实验）都不需要。
+`AMAP_JS_KEY` / `AMAP_JS_SECRET` 只在需要拖拽缩放时配；默认页面不写任何前端凭据，可提交到公开仓库。
 
 Key 放在项目根目录的 **`.env`**，代码里不出现明文：
 
@@ -237,8 +265,11 @@ python -m scripts.reproduce --quick
 # 全量实验：约 1.6 小时（20 核）
 python -m scripts.reproduce
 
+# 外部基线：OR-Tools 纯卡车 VRPTW，约 3 分钟（需 pip install -r requirements-dev.txt）
+python -m scripts.ortools_baseline
+
 # 单元测试
-pytest -q -m "not slow"    # 313 项快速测试
+pytest -q -m "not slow"    # 324 项快速测试
 ```
 
 单组实验通过 `python -m scripts.bench --exp <实验名>` 运行，常用参数如下：
@@ -267,8 +298,8 @@ data/instances/   16 个基准算例 + 4 个天河算例（JSON）
 data/tianhe/      天河底图矩阵与抓取元数据（原始路网不入库）
 data/raw/         算例底图数据（未纳入版本控制）
 src/              模型与算法，29 个模块，约 6.2k 行
-scripts/          实验、诊断、绘图、算例构建与自检，41 个脚本，约 7.4k 行
-tests/            28 个测试文件，323 项测试
+scripts/          实验、诊断、绘图、算例构建与自检，42 个脚本，约 7.2k 行
+tests/            29 个测试文件，334 项测试
 results/          60 份结果表（3 402 次求解）与主图
 docs/             项目设计、成果报告、工程手册、设计笔记
 ```

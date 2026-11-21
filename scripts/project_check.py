@@ -34,10 +34,12 @@ REQUIRED = {
     "复现对标图": ["routes_fig8.png", "fig9_capacity_demand.png",
                    "fig10_drone_payload.png", "fig11_nfz_sensitivity.png",
                    "fig12_mission_count.png"],
+    "外部基线": ["ortools_baseline.csv", "ortools_baseline.md"],
 }
 DOCS = ["README.md", "LICENSE", "CITATION.cff", ".github/workflows/ci.yml",
         ".env.example", "src/env.py",
         "docs/项目书.md", "docs/成果整合.md", "docs/求职_项目经历.md", "docs/求职_能力评估.md",
+        "docs/求职_外部基线.md", "docs/求职_业务场景.md",
         "docs/工程手册.md",
         "docs/设计笔记/README.md", "docs/设计笔记/结论总览.md",
         "docs/设计笔记/W1_换电模型设计.md",

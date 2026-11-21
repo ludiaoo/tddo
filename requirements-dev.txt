@@ -1,2 +1,4 @@
 # 开发/测试依赖（运行复现本身不需要）
 pytest==9.1.1
+# 外部基线 scripts.ortools_baseline 需要；不装不影响求解器本体与测试
+ortools>=9.11
