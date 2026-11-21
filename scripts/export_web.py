@@ -109,6 +109,15 @@ def _gcj(points) -> list[list[float]]:
 
 # ---------------------------------------------------------------- 解 → 折线
 
+def sortie_node_seq(nodes: list[int], s) -> list[int]:
+    """一个架次的节点序列：起飞站 → 各客户 → 归队站。
+
+    `s.launch` / `s.recover` 是 ``nodes`` 里的**位置下标**，不是节点编号，
+    必须先换成 ``nodes[pos]`` 再用（曾经直接拿去做节点索引，端点画到 1–4 km 外）。
+    """
+    return [int(nodes[s.launch]), *[int(c) for c in s.customers], int(nodes[s.recover])]
+
+
 def encode_solution(inst, sol: Solution, graph) -> dict:
     """把一个解编码成前端数据：每条卡车路径 + 每个架次的折线，以及汇总指标。"""
     coord, adj, idx, ids, tree, (lat0, lon0) = graph
@@ -118,8 +127,11 @@ def encode_solution(inst, sol: Solution, graph) -> dict:
         _, j = tree.query(to_local_xy(nd.lat, nd.lon, lat0, lon0))
         node_osm.append(ids[int(np.atleast_1d(j).ravel()[0])])
 
+    # 先逐路线模拟：既拿每个架次的起降时刻，也用来核对几何。
+    evs = [_simulate_route(inst, rt, fast=False) for rt in sol.routes]
+
     routes = []
-    for rt in sol.routes:
+    for k, rt in enumerate(sol.routes):
         if not rt.served_customers():              # 空车（[0,0]）不画
             continue
         nodes = list(rt.nodes)
@@ -128,18 +140,48 @@ def encode_solution(inst, sol: Solution, graph) -> dict:
             pa = shortest_path(adj, idx[node_osm[a]], idx[node_osm[b]])
             leg = [coord[inv[i]] for i in pa]
             poly.extend(leg[1:] if poly and leg and poly[-1] == leg[0] else leg)
+
+        ev = evs[k]
+        wins = list(ev.sortie_windows or [])
+        specs = sorted(rt.sorties, key=lambda s: s.launch)   # 按卡车行程顺序编号
+        # 只有全部架次都成功时，sortie_windows 才能与 specs 一一对应
+        timed = len(wins) == len(specs)
         sorties = []
-        for s in rt.sorties:
-            seq = [s.launch, *s.customers, s.recover]
-            sorties.append({
+        for j, s in enumerate(specs):
+            # 注意：s.launch / s.recover 是 **nodes 里的位置下标**，不是节点编号。
+            # 之前直接拿它去索引 inst.base.nodes，导致架次起降点画到了 1–4 km 之外
+            # （看起来就像"无人机飞到一半没回来"）。
+            seq = sortie_node_seq(nodes, s)
+            lnode, rnode = seq[0], seq[-1]
+            item = {
                 "launch": int(s.launch), "recover": int(s.recover),
+                "launch_node": lnode, "recover_node": rnode,
                 "customers": [int(c) for c in s.customers],
                 "path": _gcj([(inst.base.nodes[i].lat, inst.base.nodes[i].lon) for i in seq]),
-            })
-        routes.append({"truck": int(rt.truck), "nodes": [int(x) for x in nodes],
-                       "path": _gcj(poly), "sorties": sorties})
+            }
+            if timed:
+                item["t_launch_min"] = round(wins[j][0] / 60.0, 1)
+                item["t_land_min"] = round(wins[j][1] / 60.0, 1)
+            sorties.append(item)
 
-    evs = [_simulate_route(inst, rt, fast=False) for rt in sol.routes]
+        stops = [
+            {"node": int(n), "pos": pos, "ll": _gcj([(inst.base.nodes[n].lat, inst.base.nodes[n].lon)])[0]}
+            for pos, n in enumerate(nodes)
+            if not (pos == len(nodes) - 1 and int(n) == 0)     # 末尾回仓不重复画
+        ]
+        # 守门：架次的起降点必须落在卡车某个停靠点上。端点若飞到几百米外，
+        # 说明又拿位置下标当节点编号用了（这一处真的错过一次）。
+        for s_ in sorties:
+            for tag, pt in (("起飞", s_["path"][0]), ("归队", s_["path"][-1])):
+                near = min(
+                    math.hypot((pt[0] - st["ll"][0]) * 96_000, (pt[1] - st["ll"][1]) * 111_000)
+                    for st in stops
+                ) if stops else 0.0
+                if near > 50.0:
+                    print(f"  警告：卡车 {rt.truck} 的{tag}点离最近停靠 {near:.0f} m，端点可能不在卡车上")
+        routes.append({"truck": int(rt.truck), "nodes": [int(x) for x in nodes],
+                       "stops": stops, "path": _gcj(poly), "sorties": sorties})
+
     _, cost = evaluate(inst, sol)
     return {
         "cost": round(float(cost), 4),
@@ -274,8 +316,11 @@ HTML = """<!doctype html>
 </div>
 
 <div class="legend">
-  <div><span class="sw" style="border-top-color:#1F4E79"></span>卡车（实线，颜色按车区分）</div>
-  <div><span class="sw d" style="border-top-color:#E67E22"></span>无人机架次（虚线）</div>
+  <div><span class="sw" style="border-top-color:#1F4E79"></span>卡车路径（实线，按车分色）</div>
+  <div><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#1F4E79;border:1.5px solid #fff"></span>卡车停靠点（悬停看第几站）</div>
+  <div><span class="sw d" style="border-top-color:#E67E22"></span>无人机架次（虚线，同色属同一辆车）</div>
+  <div><span style="display:inline-block;width:9px;height:9px;border-radius:50%;border:2px solid #E67E22;background:#fff"></span>架次起飞点</div>
+  <div><span style="display:inline-block;width:9px;height:9px;background:#E67E22;border:2px solid #1b1b1b;border-radius:2px"></span><b style="font-weight:600">归队点</b>（方块，落回卡车）</div>
   <div><span class="sw d" style="border-top-color:#9AA0A6"></span>初始解（灰色虚线）</div>
 </div>
 
@@ -335,9 +380,10 @@ function renderList() {
     const col = PAL[i % PAL.length];
     const sub = r.sorties.map((s, j) => {
       const key = `t${i}s${j}`;
+      const t = (s.t_launch_min !== undefined) ? ` · ${s.t_launch_min}→${s.t_land_min}min` : '';
       return `<div class="row sub"><span class="sw d" style="border-top-color:${col}"></span>
         <label><input type="checkbox" data-k="${key}" ${selS.has(key) ? 'checked' : ''}>
-        架次 ${j + 1} · ${s.customers.length} 客户</label></div>`;
+        架次 ${j + 1} · ${s.customers.length} 客户${t}</label></div>`;
     }).join('');
     return `<div class="row"><span class="sw" style="border-top-color:${col}"></span>
       <label><input type="checkbox" data-t="${i}" ${selT.has('t' + i) ? 'checked' : ''}>
@@ -394,21 +440,37 @@ function drawSol(sol, ghost, ignoreSel) {
         html: `<div style="background:${col};color:#fff;border-radius:9px;font-size:11px;line-height:16px;
           text-align:center;width:18px;height:18px;border:1.5px solid #fff;font-weight:600">${i + 1}</div>`,
         iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(gRoute);
+
+      // 卡车停靠点：无人机就是在这里起降的，画出来才看得出"归队"落在哪
+      (r.stops || []).forEach(st => {
+        L.circleMarker([st.ll[1], st.ll[0]], { radius: 3.2, color: '#fff', weight: 1.2,
+          fillColor: col, fillOpacity: .95 }).addTo(gRoute)
+          .bindTooltip(`卡车 ${r.truck} · 第 ${st.pos} 站 · 节点 ${st.node}`, { direction: 'top' });
+      });
     }
 
     r.sorties.forEach((s, j) => {
       if (!ignoreSel && !selS.has(`t${i}s${j}`)) return;
       const sp = s.path.map(([lon, lat]) => [lat, lon]);
+      const tt = (s.t_launch_min !== undefined)
+        ? ` · ${s.t_launch_min}→${s.t_land_min} min` : '';
       L.polyline(sp, { color: '#fff', weight: 5, opacity: .8 }).addTo(gRoute);
       L.polyline(sp, { color: ghost ? '#9AA0A6' : col, weight: 3, opacity: 1,
         dashArray: ghost ? '3 4' : DASH[j % DASH.length] }).addTo(gRoute)
-        .bindTooltip(`${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户`,
+        .bindTooltip(`${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户${tt}`,
                      { sticky: true });
       if (!ghost) {
+        // 起飞：空心圆环（从卡车第 launch 站出发）
         L.circleMarker(sp[0], { radius: 4.5, color: col, weight: 2, fillColor: '#fff', fillOpacity: 1 })
-          .addTo(gRoute).bindTooltip('起飞', { direction: 'top' });
-        L.circleMarker(sp[sp.length - 1], { radius: 4.5, color: '#fff', weight: 1.5,
-          fillColor: col, fillOpacity: 1 }).addTo(gRoute).bindTooltip('回收', { direction: 'top' });
+          .addTo(gRoute).bindTooltip(`起飞 · 卡车 ${r.truck} 第 ${s.launch} 站（节点 ${s.launch_node}）`,
+                                     { direction: 'top' });
+        // 归队：实心方块 + 深色描边，明显区别于"停在半路"
+        L.marker(sp[sp.length - 1], { interactive: true, icon: L.divIcon({ className: '',
+          html: `<div style="width:11px;height:11px;background:${col};border:2px solid #1b1b1b;
+            border-radius:2px"></div>`, iconSize: [11, 11], iconAnchor: [5.5, 5.5] }) })
+          .addTo(gRoute)
+          .bindTooltip(`归队 · 落回卡车 ${r.truck} 第 ${s.recover} 站（节点 ${s.recover_node}）`,
+                       { direction: 'top' });
       }
     });
   });
@@ -429,11 +491,14 @@ else map.setView([DATA.depot[1], DATA.depot[0]], 13);
 
 // ---------- 事件
 const noteEl = document.getElementById('note');
+const RENDEZVOUS = '说明：无人机不在原地等卡车，它飞到客户点投递后，落回卡车<b>后面某一站</b>（方块＝归队点）；'
+  + '那段时间卡车一直在往前开，所以归队点通常不在起飞点旁边。';
 const setNote = () => {
-  noteEl.textContent = mode === 'overlay'
+  const head = mode === 'overlay'
     ? '叠加：灰色虚线是初始解，彩色实线是最终解；勾选作用于「最终解」的卡车与架次。'
     : mode === 'initial' ? '当前显示初始可行解（未优化）。勾选可单独查看某辆车。'
     : '当前显示 ALNS 最终解。勾选左侧可只保留部分卡车/架次。';
+  noteEl.innerHTML = `${head}<br>${RENDEZVOUS}`;
 };
 
 document.querySelectorAll('.modes button').forEach(b => b.onclick = () => {
@@ -536,8 +601,10 @@ function init() {
   info = new AMap.InfoWindow({ offset: new AMap.Pixel(0, -14), isCustom: false });
 
   buildCmp(); selectAll(); renderListChildren(); render(); bindUI();
-  document.getElementById('note').textContent =
-    '当前显示 ALNS 最终解。勾选左侧可只保留部分卡车/架次；卡车线带方向箭头。';
+  document.getElementById('note').innerHTML =
+    '当前显示 ALNS 最终解。勾选左侧可只保留部分卡车/架次；卡车线带方向箭头。'
+    + '<br>无人机飞到客户点投递后，落回卡车<b>后面某一站</b>（方块＝归队点），'
+    + '那段时间卡车一直在往前开，所以归队点通常不在起飞点旁边。';
 }
 
 function buildCmp() {
@@ -578,9 +645,10 @@ function renderList() {
     const col = PAL[i % PAL.length];
     const sub = r.sorties.map((s, j) => {
       const key = `t${i}s${j}`;
+      const t = (s.t_launch_min !== undefined) ? ` · ${s.t_launch_min}→${s.t_land_min}min` : '';
       return `<div class="row sub"><span class="sw d" style="border-top-color:${col}"></span>
         <label><input type="checkbox" data-k="${key}" ${selS.has(key) ? 'checked' : ''}>
-        架次 ${j + 1} · ${s.customers.length} 客户</label></div>`;
+        架次 ${j + 1} · ${s.customers.length} 客户${t}</label></div>`;
     }).join('');
     return `<div class="row"><span class="sw" style="border-top-color:${col}"></span>
       <label><input type="checkbox" data-t="${i}" ${selT.has('t' + i) ? 'checked' : ''}>
@@ -643,23 +711,39 @@ function drawSol(sol, ghost, ignoreSel) {
       add(new AMap.Text({ text: String(i + 1), position: mid, offset: new AMap.Pixel(-9, -9),
         style: { background: col, color: '#fff', border: '1.5px solid #fff', borderRadius: '9px',
                  padding: '1px 4px', fontSize: '11px', fontWeight: '600' }, zIndex: 90 }));
+
+      // 卡车停靠点：架次的起降都落在这些点上
+      (r.stops || []).forEach(st => {
+        const m = add(new AMap.CircleMarker({ center: st.ll, radius: 3, strokeColor: '#fff',
+          strokeWeight: 1.2, fillColor: col, fillOpacity: .95, zIndex: 82 }));
+        m.on('mouseover', e => info.open(map, e.lnglat,
+          `卡车 ${r.truck} · 第 ${st.pos} 站 · 节点 ${st.node}`));
+      });
     }
 
     r.sorties.forEach((s, j) => {
       if (!ignoreSel && !selS.has(`t${i}s${j}`)) return;
+      const tt = (s.t_launch_min !== undefined) ? ` · ${s.t_launch_min}→${s.t_land_min} min` : '';
       const pl = add(new AMap.Polyline({
         path: s.path, strokeColor: ghost ? '#9AA0A6' : col, strokeWeight: 2.5,
         strokeOpacity: 1, strokeStyle: 'dashed',
         strokeDasharray: ghost ? [3, 4] : DASH[j % DASH.length], zIndex: 70,
       }));
       pl.on('mouseover', e => info.open(map, e.lnglat,
-        `${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户`));
+        `${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户${tt}`));
       pl.setMap(map);
       if (!ghost) {
-        add(new AMap.CircleMarker({ center: s.path[0], radius: 4.5, strokeColor: col,
-          strokeWeight: 2, fillColor: '#fff', fillOpacity: 1, zIndex: 80 }));
-        add(new AMap.CircleMarker({ center: s.path[s.path.length - 1], radius: 4.5,
-          strokeColor: '#fff', strokeWeight: 1.5, fillColor: col, fillOpacity: 1, zIndex: 80 }));
+        const lc = add(new AMap.CircleMarker({ center: s.path[0], radius: 4.5, strokeColor: col,
+          strokeWeight: 2, fillColor: '#fff', fillOpacity: 1, zIndex: 84 }));
+        lc.on('mouseover', e => info.open(map, e.lnglat,
+          `起飞 · 卡车 ${r.truck} 第 ${s.launch} 站（节点 ${s.launch_node}）`));
+        // 归队：方块标记，与"起飞"的圆环区分开
+        const rc = add(new AMap.Marker({
+          position: s.path[s.path.length - 1], offset: new AMap.Pixel(-5.5, -5.5), zIndex: 86,
+          content: `<div style="width:11px;height:11px;background:${col};border:2px solid #1b1b1b;border-radius:2px"></div>`,
+        }));
+        rc.on('mouseover', e => info.open(map, e.lnglat,
+          `归队 · 落回卡车 ${r.truck} 第 ${s.recover} 站（节点 ${s.recover_node}）`));
       }
     });
   });
@@ -681,9 +765,10 @@ function bindUI() {
     mode = b.dataset.mode;
     document.querySelectorAll('.modes button').forEach(x => x.classList.toggle('on', x === b));
     selectAll(); renderList(); render();
-    note.textContent = mode === 'overlay'
+    note.innerHTML = (mode === 'overlay'
       ? '叠加：灰色虚线是初始解，彩色实线是最终解；勾选只作用于最终解。'
-      : mode === 'initial' ? '当前显示初始可行解（未优化）。' : '当前显示 ALNS 最终解。';
+      : mode === 'initial' ? '当前显示初始可行解（未优化）。' : '当前显示 ALNS 最终解。')
+      + '<br>无人机飞到客户点投递后，落回卡车<b>后面某一站</b>（方块＝归队点）。';
   });
   document.getElementById('all').onclick = () => { selectAll(); renderList(); render(); };
   document.getElementById('none').onclick = () => { selT.clear(); selS.clear(); renderList(); render(); };
