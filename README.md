@@ -2,7 +2,7 @@
 
 **卡车—无人机联合配送优化器**（Truck–Drone Delivery Optimizer）
 
-![tests](https://img.shields.io/badge/tests-334%20%28324%20fast%20%2B%2010%20Gurobi%29-brightgreen)
+![tests](https://img.shields.io/badge/tests-338%20%28328%20fast%20%2B%2010%20Gurobi%29-brightgreen)
 ![python](https://img.shields.io/badge/python-3.13-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![full run](https://img.shields.io/badge/full%20run-1.6%20h-orange)
@@ -211,7 +211,8 @@ CO₂ 由 1.88 降至 1.42 kg/单。绝对值仅为量级示例，不构成报�
 
 ```bash
 python -m venv .venv && .venv/Scripts/activate     # Linux/macOS: source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"     # 安装依赖并注册 tddo 命令；[dev] 含 pytest 与 OR-Tools
+tddo doctor                 # 环境体检：依赖 / 配置 / 数据 / 密钥状态
 
 # 算例底图数据（83 MB，未纳入版本控制）
 git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
@@ -220,6 +221,7 @@ git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
 python -m src.generator
 ```
 
+不安装包也可以用 `python -m src.cli ...`；原有的 `python -m scripts.xxx` 调用方式继续有效。
 未配置 Gurobi 时，除 `scripts.run_milp` 与 10 项标记为 `slow` 的测试外，其余功能均可运行。
 
 ### 5.1 API Key 配置（高德，可选）
@@ -256,8 +258,19 @@ AMAP_KEY=另一个key python -m scripts.amap_check     # 仅本次生效
 ## 6. 使用
 
 ```bash
+# 环境体检（装好就能跑，缺什么会直接列出来）
+tddo doctor
+
+# 单算例求解：写出含卡车路径、无人机架次、成本拆分的 JSON
+tddo solve --set 104 --iters 300 --seed 0
+
 # 项目自检：检查产物完整性与默认口径是否被修改
-python -m scripts.project_check
+tddo check                       # 加 --with-tests 可一并跑快速测试
+
+# 批量实验 / 外部基线 / 地图可视化（参数原样透传给对应脚本）
+tddo bench --sets 104 --seeds 3 --iters 1000
+tddo baseline
+tddo export-web --set 112
 
 # 快速验证：小轮数、少算例，约 4 分钟，不覆盖已有结果
 python -m scripts.reproduce --quick
@@ -265,12 +278,22 @@ python -m scripts.reproduce --quick
 # 全量实验：约 1.6 小时（20 核）
 python -m scripts.reproduce
 
-# 外部基线：OR-Tools 纯卡车 VRPTW，约 3 分钟（需 pip install -r requirements-dev.txt）
-python -m scripts.ortools_baseline
-
 # 单元测试
-pytest -q -m "not slow"    # 324 项快速测试
+pytest -q -m "not slow"
 ```
+
+### 6.1 容器运行
+
+```bash
+docker build -t tddo:latest .
+docker run --rm tddo:latest tddo --help
+
+# 数据与结果挂载进容器；密钥用 --env-file，不写进镜像
+docker run --rm -v "%cd%/data:/app/data" -v "%cd%/results:/app/results" \
+  --env-file .env tddo:latest tddo solve --set 104 --iters 300
+```
+
+镜像里不含 83 MB 算例底图、`.env` 与 Gurobi 许可证；精确求解时再挂载 `GRB_LICENSE_FILE`。
 
 单组实验通过 `python -m scripts.bench --exp <实验名>` 运行，常用参数如下：
 
@@ -297,10 +320,10 @@ configs/          模型与算例参数（TOML）
 data/instances/   16 个基准算例 + 4 个天河算例（JSON）
 data/tianhe/      天河底图矩阵与抓取元数据（原始路网不入库）
 data/raw/         算例底图数据（未纳入版本控制）
-src/              模型与算法，29 个模块，约 6.2k 行
+src/              模型与算法与 CLI，30 个模块，约 6.4k 行
 scripts/          实验、诊断、绘图、算例构建与自检，42 个脚本，约 7.2k 行
-tests/            29 个测试文件，334 项测试
-results/          60 份结果表（3 402 次求解）与主图
+tests/            30 个测试文件，338 项测试
+results/          109 份结果 CSV（3 402 次求解）与主图
 docs/             项目设计、成果报告、工程手册、设计笔记
 ```
 

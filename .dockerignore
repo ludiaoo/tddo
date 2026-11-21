@@ -1,0 +1,33 @@
+# 版本控制与虚拟环境
+.git
+.github
+.venv
+.venv_p1
+.pytest_cache
+__pycache__
+*.py[cod]
+*.egg-info
+build/
+dist/
+
+# 密钥（含历史残留）
+.env
+.env.*
+workbuddy*.json
+
+# 大体积数据与派生结果（运行时挂载）
+data/
+results/
+docs/web/
+models/
+_local/
+.tmp/
+*.pdf
+*.html
+
+# 编辑器与系统文件
+.workbuddy/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

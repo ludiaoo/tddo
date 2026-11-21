@@ -12,7 +12,7 @@
 
 用法：
     python -m scripts.project_check              # 快检（几秒）
-    python -m scripts.project_check --with-tests # 含 245 项快速测试（约 20 s）
+    python -m scripts.project_check --with-tests # 含全部快速测试（约 20 s）
 """
 
 from __future__ import annotations
@@ -37,7 +37,8 @@ REQUIRED = {
     "外部基线": ["ortools_baseline.csv", "ortools_baseline.md"],
 }
 DOCS = ["README.md", "LICENSE", "CITATION.cff", ".github/workflows/ci.yml",
-        ".env.example", "src/env.py",
+        ".env.example", "pyproject.toml", "Dockerfile", ".dockerignore",
+        "src/env.py", "src/cli.py", "tests/test_cli.py",
         "docs/项目书.md", "docs/成果整合.md", "docs/求职_项目经历.md", "docs/求职_能力评估.md",
         "docs/求职_外部基线.md", "docs/求职_业务场景.md",
         "docs/工程手册.md",

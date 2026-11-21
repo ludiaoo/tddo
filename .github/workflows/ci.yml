@@ -25,6 +25,15 @@ jobs:
           pip install -r requirements.txt
           pip install -r requirements-dev.txt
 
+      - name: Install package (CLI)
+        run: pip install -e .
+
+      - name: CLI smoke
+        run: |
+          tddo --version
+          tddo --help
+          tddo doctor
+
       # 原始算例是第三方公开数据（83 MB），不入库；测试需要它构造 Instance
       - name: Fetch mFSTSP instances
         run: git clone --depth 1 https://github.com/optimatorlab/mFSTSP.git data/raw/mFSTSP
@@ -35,4 +44,11 @@ jobs:
 
       # 产物是否齐、默认口径是否被改动（逐位回归）
       - name: Project self-check
-        run: python -m scripts.project_check
+        run: tddo check
+
+      # 容器构建：不挂载数据/密钥，镜像里只应能跑 --help 与 doctor
+      - name: Docker build
+        run: |
+          docker build -t tddo:ci .
+          docker run --rm tddo:ci tddo --version
+          docker run --rm tddo:ci tddo --help | head -5
