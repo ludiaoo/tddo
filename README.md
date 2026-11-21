@@ -2,7 +2,7 @@
 
 **卡车—无人机联合配送优化器**（Truck–Drone Delivery Optimizer）
 
-![tests](https://img.shields.io/badge/tests-338%20%28328%20fast%20%2B%2010%20Gurobi%29-brightgreen)
+![tests](https://img.shields.io/badge/tests-341%20%28331%20fast%20%2B%2010%20Gurobi%29-brightgreen)
 ![python](https://img.shields.io/badge/python-3.13-blue)
 ![license](https://img.shields.io/badge/license-MIT-green)
 ![full run](https://img.shields.io/badge/full%20run-1.6%20h-orange)
@@ -177,7 +177,7 @@ Gurobi 求到最优。实验覆盖 16 个算例（10–100 客户）× 10 个随
 解可以直接画在高德底图上：[`docs/web/tddo_map_set112.html`](docs/web/tddo_map_set112.html)
 （高德静态底图内嵌，打开时不需要 Key；卡车折线取自真实路网最短路，无人机架次为虚线直线）。
 页面支持按车/按架次勾选、全选/清空/反选，以及在「初始解 / 最终解」之间切换；卡车停靠点、架次起飞点（圆环）与归队点（方块）分别标注，可看出无人机是在卡车**后面某一站**落回，而不是回起飞点。
-渲染统一复用 skill `amap-dispatch-map`（`adapt_tddo.py` 转 payload + `build_map.py` 出图），本项目只负责求解与解数据编码，不再维护第二份 HTML 模板；生成方式见
+渲染统一复用 `or-research` skill 内置的 `amap/` 可视化模块（`adapt_tddo.py` 转 payload + `build_map.py` 出图），本项目只负责求解与解数据编码，不再维护第二份 HTML 模板；生成方式见
 [`docs/设计笔记/M9.23_天河真实路网算例.md`](docs/设计笔记/M9.23_天河真实路网算例.md) §10。
 
 ### 4.5 外部基线（OR-Tools）
@@ -272,6 +272,10 @@ tddo bench --sets 104 --seeds 3 --iters 1000
 tddo baseline
 tddo export-web --set 112
 
+# 规模压测（工程指标，约 5 分钟）：10–500 客户，固定 50 轮，不写进论文表格
+python -m scripts.scale_bench --iters 50
+python -m scripts.scale_fig
+
 # 快速验证：小轮数、少算例，约 4 分钟，不覆盖已有结果
 python -m scripts.reproduce --quick
 
@@ -321,9 +325,9 @@ data/instances/   16 个基准算例 + 4 个天河算例（JSON）
 data/tianhe/      天河底图矩阵与抓取元数据（原始路网不入库）
 data/raw/         算例底图数据（未纳入版本控制）
 src/              模型与算法与 CLI，30 个模块，约 6.4k 行
-scripts/          实验、诊断、绘图、算例构建与自检，42 个脚本，约 7.2k 行
-tests/            30 个测试文件，338 项测试
-results/          109 份结果 CSV（3 402 次求解）与主图
+scripts/          实验、诊断、绘图、算例构建与自检，44 个脚本，约 7.5k 行
+tests/            31 个测试文件，341 项测试
+results/          110 份结果 CSV（3 402 次求解）与主图
 docs/             项目设计、成果报告、工程手册、设计笔记
 ```
 
@@ -338,6 +342,8 @@ docs/             项目设计、成果报告、工程手册、设计笔记
 | 起降变量拆分的完整形式与验证 | [`docs/设计笔记/W1_换电模型设计.md`](docs/设计笔记/W1_换电模型设计.md) |
 | 约束逐条翻译（公式与实现） | [`docs/笔记/约束逐条翻译.md`](docs/笔记/约束逐条翻译.md) |
 | 天河真实路网算例的构建与体检 | [`docs/设计笔记/M9.23_天河真实路网算例.md`](docs/设计笔记/M9.23_天河真实路网算例.md) |
+| 规模压测（工程指标，含曲线） | [`results/scale_bench.md`](results/scale_bench.md) |
+| 文献定位与 related work 草稿 | [`docs/求职_文献定位.md`](docs/求职_文献定位.md) |
 
 ## 8. 正确性验证
 
