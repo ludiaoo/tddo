@@ -1,14 +1,14 @@
 """把天河算例的解导出成「能贴到高德地图上」的网页与静态图。
 
-三件事：
+四件事：
 
-1. 求解（或用缓存）得到卡车路线与无人机架次；
-2. 卡车段**沿真实路网**取最短路（Dijkstra + 前驱回溯），不是两点直线——
-   否则地图上会出现穿过珠江的线；
-3. 全部坐标做 WGS-84 → GCJ-02（高德底图用火星坐标），输出：
-   - `docs/web/solution_<set>.json`：前端可直接吃的数据
-   - `docs/web/tddo_map.html`：交互页面（高德 JS API，需要 Web端(JS API) Key）
-   - `results/figs/amap_static_<set>.png`：静态地图（用 Web服务 Key，立即可看）
+1. 求解并保留**初始解**（`build_initial`）与**最终解**，两者都能画、能对比；
+2. 卡车段沿真实路网取最短路（Dijkstra + 前驱回溯），不是两点直线；
+3. 全部坐标 WGS-84 → GCJ-02；
+4. 输出：
+   - `docs/web/tddo_map_<set>.html`：交互页面（按车/按架次选择、全选/反选、初始 vs 最终）
+   - `docs/web/solution_<set>.json`：前端数据
+   - `results/figs/amap_static_<set>.png`：静态图（Web服务 Key）
 
 用法：
     python -m scripts.export_web --set 112 --seed 0
@@ -32,11 +32,12 @@ from scipy.spatial import cKDTree
 
 from src.alns import solve
 from src.amap import wgs84_to_gcj02
-from src.evaluator import evaluate
+from src.evaluator import _simulate_route, evaluate
 from src.generator import build_instance
+from src.initial import build_initial
 from src.instance import to_local_xy
 from src.io import PROJECT_ROOT, load_config, load_sets
-from src.solution import solution_to_dict
+from src.solution import Solution
 
 WEB = PROJECT_ROOT / "docs" / "web"
 FIGS = PROJECT_ROOT / "results" / "figs"
@@ -46,11 +47,10 @@ FIGS = PROJECT_ROOT / "results" / "figs"
 
 def load_graph():
     """复用 build_tianhe 的建图逻辑，另建邻接表与 KD 树，供最短路回溯。"""
-    from scripts.build_tianhe import load_graph as _lg, _largest_scc
+    from scripts.build_tianhe import _largest_scc, load_graph as _lg
 
     coord, edges = _lg()
     keep, idx = _largest_scc(len({e[0] for e in edges} | {e[1] for e in edges}), edges)
-    adj: dict[int, list[tuple[int, float]]] = {}
     best: dict[tuple[int, int], float] = {}
     for u, v, d, _ in edges:
         iu, iv = idx.get(u), idx.get(v)
@@ -58,6 +58,7 @@ def load_graph():
             continue
         if d < best.get((iu, iv), float("inf")):
             best[(iu, iv)] = d
+    adj: dict[int, list[tuple[int, float]]] = {}
     for (iu, iv), d in best.items():
         adj.setdefault(iu, []).append((iv, d))
 
@@ -65,11 +66,11 @@ def load_graph():
     latlon = np.array([coord[n] for n in ids])
     lat0, lon0 = latlon[:, 0].mean(), latlon[:, 1].mean()
     xy = np.array([to_local_xy(la, lo, lat0, lon0) for la, lo in latlon])
-    return coord, adj, idx, ids, cKDTree(xy), (lat0, lon0), xy
+    return coord, adj, idx, ids, cKDTree(xy), (lat0, lon0)
 
 
 def shortest_path(adj, src: int, dst: int, limit: int = 400_000) -> list[int]:
-    """Dijkstra + 前驱回溯。图规模 1.5 万节点、30 来段，够用。"""
+    """Dijkstra + 前驱回溯；图规模 1.5 万节点、几十段，够用。"""
     if src == dst:
         return [src]
     dist = {src: 0.0}
@@ -97,10 +98,8 @@ def shortest_path(adj, src: int, dst: int, limit: int = 400_000) -> list[int]:
     return path[::-1]
 
 
-# ---------------------------------------------------------------- 解 → 折线
-
-def _gcj(points: list[tuple[float, float]]) -> list[list[float]]:
-    """(lat, lon) 列表 → GCJ-02 的 [lon, lat]（高德用这个顺序）。"""
+def _gcj(points) -> list[list[float]]:
+    """(lat, lon) → GCJ-02 的 [lon, lat]（高德用这个顺序）。"""
     out = []
     for lat, lon in points:
         g_lon, g_lat = wgs84_to_gcj02(lon, lat)
@@ -108,33 +107,26 @@ def _gcj(points: list[tuple[float, float]]) -> list[list[float]]:
     return out
 
 
-def build_payload(set_id: int, seed: int, iters: int) -> dict:
-    cfg_set = next(s for s in load_sets() if s["id"] == set_id)
-    inst = build_instance(cfg_set, load_config())
-    res = solve(inst, seed=seed, iters=iters)
-    if res.best is None:
-        raise SystemExit("求解失败")
-    ev, cost = evaluate(inst, res.best)
-    if not ev.feasible:
-        raise SystemExit(f"解不可行：{ev.all_violations()[:3]}")
+# ---------------------------------------------------------------- 解 → 折线
 
-    coord, adj, idx, ids, tree, (lat0, lon0), xy = load_graph()
+def encode_solution(inst, sol: Solution, graph) -> dict:
+    """把一个解编码成前端数据：每条卡车路径 + 每个架次的折线，以及汇总指标。"""
+    coord, adj, idx, ids, tree, (lat0, lon0) = graph
     inv = {v: k for k, v in idx.items()}          # 紧凑编号 → osmid
-    node_osm: list[int] = []
+    node_osm = []
     for nd in inst.base.nodes:
         _, j = tree.query(to_local_xy(nd.lat, nd.lon, lat0, lon0))
         node_osm.append(ids[int(np.atleast_1d(j).ravel()[0])])
 
     routes = []
-    for ri, rt in enumerate(res.best.routes):
-        legs = []
+    for rt in sol.routes:
+        if not rt.served_customers():              # 空车（[0,0]）不画
+            continue
         nodes = list(rt.nodes)
+        poly: list[tuple[float, float]] = []
         for a, b in zip(nodes, nodes[1:]):
             pa = shortest_path(adj, idx[node_osm[a]], idx[node_osm[b]])
-            legs.append([coord[inv[i]] for i in pa])     # 紧凑编号换回 osmid 再取坐标
-        # 拼接时去掉相邻段重复的接点
-        poly: list[tuple[float, float]] = []
-        for leg in legs:
+            leg = [coord[inv[i]] for i in pa]
             poly.extend(leg[1:] if poly and leg and poly[-1] == leg[0] else leg)
         sorties = []
         for s in rt.sorties:
@@ -144,14 +136,38 @@ def build_payload(set_id: int, seed: int, iters: int) -> dict:
                 "customers": [int(c) for c in s.customers],
                 "path": _gcj([(inst.base.nodes[i].lat, inst.base.nodes[i].lon) for i in seq]),
             })
-        if not rt.served_customers():   # 空车（[0,0]）不画，否则地图上多个孤立点
-            continue
-        routes.append({
-            "truck": int(rt.truck), "nodes": [int(x) for x in nodes],
-            "path": _gcj(poly), "sorties": sorties,
-        })
+        routes.append({"truck": int(rt.truck), "nodes": [int(x) for x in nodes],
+                       "path": _gcj(poly), "sorties": sorties})
+
+    evs = [_simulate_route(inst, rt, fast=False) for rt in sol.routes]
+    _, cost = evaluate(inst, sol)
+    return {
+        "cost": round(float(cost), 4),
+        "n_trucks_used": len(routes),
+        "n_sorties": sum(len(r["sorties"]) for r in routes),
+        "drone_served": sum(len(s["customers"]) for r in routes for s in r["sorties"]),
+        "makespan_s": round(max((e.finish_time for e in evs), default=0.0), 1),
+        "routes": routes,
+    }
+
+
+def build_payload(set_id: int, seed: int, iters: int) -> dict:
+    cfg_set = next(s for s in load_sets() if s["id"] == set_id)
+    inst = build_instance(cfg_set, load_config())
+
+    init, init_cost, _ = build_initial(inst)
+    res = solve(inst, seed=seed, iters=iters)
+    if res.best is None:
+        raise SystemExit("求解失败")
+
+    graph = load_graph()
+    initial = encode_solution(inst, init, graph)
+    final = encode_solution(inst, res.best, graph)
+    if not np.isclose(initial["cost"], init_cost, rtol=1e-6):
+        print(f"  注意：初始解成本复算 {initial['cost']} ≠ build_initial 返回 {init_cost}")
 
     nfz = []
+    lat0, lon0 = inst.base.nodes[0].lat, inst.base.nodes[0].lon
     for z in inst.nfz:
         lat = lat0 + z.cy / 110_540.0
         lon = lon0 + z.cx / (111_320.0 * math.cos(math.radians(lat0)))
@@ -160,17 +176,10 @@ def build_payload(set_id: int, seed: int, iters: int) -> dict:
 
     pts = _gcj([(nd.lat, nd.lon) for nd in inst.base.nodes])
     return {
-        "set": set_id, "seed": seed, "iters": iters,
-        "cost": round(float(cost), 4),
-        "city": inst.base.city,
-        "n_customers": inst.base.n_customers,
-        "n_trucks": inst.n_trucks,
-        "n_sorties": sum(len(r["sorties"]) for r in routes),
-        "drone_served": sum(len(s["customers"]) for r in routes for s in r["sorties"]),
-        "depot": pts[0],
-        "customers": pts[1:],
-        "nfz": nfz,
-        "routes": routes,
+        "set": set_id, "seed": seed, "iters": iters, "city": inst.base.city,
+        "n_customers": inst.base.n_customers, "n_trucks": inst.n_trucks,
+        "depot": pts[0], "customers": pts[1:], "nfz": nfz,
+        "initial": initial, "final": final,
         "generated_at": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
 
@@ -180,19 +189,16 @@ def build_payload(set_id: int, seed: int, iters: int) -> dict:
 def static_map(payload: dict, key: str) -> Path | None:
     """用「Web服务」Key 出一张静态图（不需要 JS Key）。一次最多 4 条 path。"""
     paths = []
-    for r in payload["routes"][:4]:
+    for r in payload["final"]["routes"][:4]:
         pts = ";".join(f"{lon:.6f},{lat:.6f}" for lon, lat in r["path"][::max(1, len(r["path"]) // 90)])
         paths.append(f"6,0x1F4E79,0.9,,0:{pts}")
-    size = "1024*1024"
-    # 以路线包围盒的中心取景，而不是 depot：depot 常在边角，按它会裁掉一半路线
-    pts_all = [p for r in payload["routes"] for p in r["path"]]
+    pts_all = [p for r in payload["final"]["routes"] for p in r["path"]]
     lons = [p[0] for p in pts_all]; lats = [p[1] for p in pts_all]
     cx, cy = (min(lons) + max(lons)) / 2, (min(lats) + max(lats)) / 2
     span_km = max((max(lons) - min(lons)) * 96, (max(lats) - min(lats)) * 111)
     zoom = 14 if span_km < 3 else 13 if span_km < 7 else 12
-    loc = f"{cx:.6f},{cy:.6f}"
     url = "https://restapi.amap.com/v3/staticmap?" + urllib.parse.urlencode(
-        {"location": loc, "zoom": zoom, "size": size, "scale": 2,
+        {"location": f"{cx:.6f},{cy:.6f}", "zoom": zoom, "size": "1024*1024", "scale": 2,
          "paths": "|".join(paths), "key": key})
     try:
         with urllib.request.urlopen(url, timeout=60) as r:
@@ -219,119 +225,236 @@ HTML = """<!doctype html>
 <style>
   html,body{margin:0;height:100%;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif;color:#222}
   #map{position:absolute;inset:0}
-  .panel{position:absolute;top:14px;left:14px;z-index:999;background:#fff;border:1px solid #e3e3e3;
-         border-radius:8px;padding:12px 14px;min-width:268px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .panel{position:absolute;top:12px;left:12px;z-index:999;background:#fff;border:1px solid #e3e3e3;
+         border-radius:10px;padding:12px 14px;width:326px;box-shadow:0 2px 14px rgba(0,0,0,.1);
+         max-height:calc(100% - 24px);display:flex;flex-direction:column}
   .panel h1{font-size:15px;margin:0 0 8px}
-  .panel table{border-collapse:collapse;font-size:12.5px}
-  .panel td{padding:1px 10px 1px 0;color:#555;white-space:nowrap}
-  .panel b{color:#111}
-  .legend{position:absolute;right:14px;bottom:14px;z-index:999;background:#fff;border:1px solid #e3e3e3;
-          border-radius:8px;padding:10px 12px;font-size:12.5px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
-  .legend div{margin:4px 0;display:flex;align-items:center;gap:7px}
-  .lg-truck{width:24px;border-top:4px solid #1F4E79;border-radius:2px}
-  .lg-drone{width:24px;border-top:3px dashed #E67E22}
-  .lg-l{width:10px;height:10px;border-radius:50%;border:2px solid #2E7D5A;background:#fff}
-  .lg-r{width:9px;height:9px;background:#E67E22;border:1px solid #fff;box-sizing:border-box}
-  .lg-nfz{width:12px;height:12px;border-radius:50%;border:1px solid #C0392B;background:rgba(192,57,43,.15)}
-  .note{font-size:11.5px;color:#999;margin-top:8px;line-height:1.5}
-  .tnum{background:#1F4E79;color:#fff;border-radius:9px;font-size:11px;line-height:16px;
-        text-align:center;width:18px;height:18px;border:1.5px solid #fff;font-weight:600}
+  .modes{display:flex;gap:6px;margin:2px 0 10px}
+  .modes button{flex:1;padding:5px 0;border:1px solid #d8d8d8;background:#fafafa;border-radius:6px;
+                cursor:pointer;font-size:12.5px;color:#444}
+  .modes button.on{background:#1F4E79;border-color:#1F4E79;color:#fff}
+  table.cmp{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:8px}
+  table.cmp th,table.cmp td{padding:2px 3px;text-align:right;border-bottom:1px solid #f2f2f2}
+  table.cmp th:first-child,table.cmp td:first-child{text-align:left;color:#666}
+  table.cmp td.dn{color:#1E7B45}
+  table.cmp td.up{color:#B03A2E}
+  .bar{display:flex;gap:6px;margin:2px 0 8px}
+  .bar button{padding:3px 9px;font-size:12px;border:1px solid #d8d8d8;background:#fff;
+              border-radius:5px;cursor:pointer;color:#444}
+  .bar button:hover{background:#f3f6fa}
+  .list{overflow:auto;flex:1;border-top:1px solid #f0f0f0;padding-top:6px;min-height:80px}
+  .row{display:flex;align-items:center;gap:7px;padding:2px 0;font-size:12.5px}
+  .row.sub{margin-left:22px;color:#555;font-size:12px}
+  .sw{width:14px;border-top:4px solid #999;border-radius:2px;flex:none}
+  .sw.d{border-top-style:dashed}
+  .row label{display:flex;align-items:center;gap:6px;cursor:pointer;flex:1}
+  .solo{margin-left:auto;font-size:11px;color:#9aa;cursor:pointer;border:0;background:none;padding:0 2px}
+  .solo:hover{color:#1F4E79}
+  .legend{position:absolute;right:12px;bottom:12px;z-index:999;background:#fff;border:1px solid #e3e3e3;
+          border-radius:8px;padding:8px 11px;font-size:12px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+  .legend div{margin:3px 0;display:flex;align-items:center;gap:6px}
+  .note{font-size:11px;color:#9a9a9a;margin-top:6px;line-height:1.5}
 </style></head>
 <body>
 <div id="map"></div>
+
 <div class="panel">
   <h1>天河算例 · 卡车与无人机路线</h1>
-  <table id="stats"></table>
-  <div class="note">卡车为实线并按车编号；无人机为橙色虚线，绿圈起飞、橙方块回收。
-  右下角图例可对照，右上角可开关图层与切换底图。</div>
+  <div class="modes">
+    <button data-mode="final" class="on">最终解</button>
+    <button data-mode="initial">初始解</button>
+    <button data-mode="overlay">叠加对比</button>
+  </div>
+  <table class="cmp" id="cmp"></table>
+  <div class="bar">
+    <button id="all">全选</button><button id="none">全不选</button><button id="inv">反选</button>
+  </div>
+  <div class="list" id="list"></div>
+  <div class="note" id="note"></div>
 </div>
+
 <div class="legend">
-  <div><span class="lg-truck"></span>卡车路径（实线，编号 1–n）</div>
-  <div><span class="lg-drone"></span>无人机架次（虚线）</div>
-  <div><span class="lg-l"></span>架次起飞点</div>
-  <div><span class="lg-r"></span>架次回收点</div>
-  <div><span class="lg-nfz"></span>禁飞区</div>
+  <div><span class="sw" style="border-top-color:#1F4E79"></span>卡车（实线，颜色按车区分）</div>
+  <div><span class="sw d" style="border-top-color:#E67E22"></span>无人机架次（虚线）</div>
+  <div><span class="sw d" style="border-top-color:#9AA0A6"></span>初始解（灰色虚线）</div>
 </div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const DATA = __DATA__;
-const rows = [
-  ['算例', DATA.set + ' · ' + DATA.city],
-  ['客户 / 卡车', DATA.n_customers + ' / ' + DATA.n_trucks],
-  ['架次 / 无人机服务', DATA.n_sorties + ' / ' + DATA.drone_served],
-  ['目标成本', DATA.cost],
-  ['种子 / 迭代', DATA.seed + ' / ' + DATA.iters],
-  ['生成时间', DATA.generated_at],
-];
-document.getElementById('stats').innerHTML =
-  rows.map(([k, v]) => `<tr><td>${k}</td><td><b>${v}</b></td></tr>`).join('');
+const PAL = ['#1F4E79','#2E7D5A','#8E5A9E','#B26A00','#2A6F7F','#7A4E2D','#4A5FA5','#7D6B3F'];
+const DASH = ['7 6', '3 5', '12 5 3 5', '2 6'];
+let mode = 'final';
+let selT = new Set(), selS = new Set();
 
 const amap = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
   { subdomains: '1234', maxZoom: 18, attribution: '&copy; 高德地图' });
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
-
 const map = L.map('map', { layers: [amap], zoomControl: true });
+const gRoute = L.layerGroup().addTo(map);
+const gNfz = L.layerGroup().addTo(map);
+const gPts = L.layerGroup().addTo(map);
+L.control.layers({ '高德底图': amap, 'OSM 底图（坐标参考）': osm },
+                 { '路线': gRoute, '禁飞区': gNfz, '客户点': gPts },
+                 { position: 'topright', collapsed: false }).addTo(map);
 
-const gTruck = L.layerGroup().addTo(map);
-const gDrone = L.layerGroup().addTo(map);
-const gNfz   = L.layerGroup().addTo(map);
-const gPts   = L.layerGroup().addTo(map);
-L.control.layers(
-  { '高德底图': amap, 'OSM 底图（坐标参考）': osm },
-  { '卡车路径': gTruck, '无人机架次': gDrone, '禁飞区': gNfz, '客户点': gPts },
-  { position: 'topright', collapsed: false }).addTo(map);
+// ---------- 初始 vs 最终
+const I = DATA.initial, F = DATA.final;
+const num = v => (Math.abs(v) >= 1000 ? v.toFixed(0) : v.toFixed(1));
+const rows = [
+  ['成本', I.cost, F.cost, true],
+  ['使用卡车', I.n_trucks_used, F.n_trucks_used, false],
+  ['架次数', I.n_sorties, F.n_sorties, false],
+  ['无人机服务', I.drone_served, F.drone_served, false],
+  ['完工 (h)', I.makespan_s / 3600, F.makespan_s / 3600, true],
+];
+document.getElementById('cmp').innerHTML =
+  '<tr><th>指标</th><th>初始</th><th>最终</th><th>变化</th></tr>' +
+  rows.map(([k, a, b, pct]) => {
+    const d = b - a, rel = a ? d / Math.abs(a) * 100 : 0;
+    const cls = d < 0 ? 'dn' : (d > 0 ? 'up' : '');
+    const txt = d === 0 ? '—' : (pct ? `${rel > 0 ? '+' : ''}${rel.toFixed(1)}%` : `${d > 0 ? '+' : ''}${d}`);
+    return `<tr><td>${k}</td><td>${num(a)}</td><td><b>${num(b)}</b></td><td class="${cls}">${txt}</td></tr>`;
+  }).join('');
 
-const palette = ['#1F4E79','#2E7D5A','#8E5A9E','#B26A00','#2A6F7F','#7A4E2D'];
-const bounds = [];
-let k = 0;
+// ---------- 列表与选择
+const current = () => (mode === 'initial' ? I.routes : F.routes);
 
-DATA.routes.forEach((r, i) => {
-  k += 1;
-  const c = palette[i % palette.length];
-  const ll = r.path.map(([lon, lat]) => [lat, lon]);
-  // 白色描边打底：两条路线重合时也能分出层次
-  L.polyline(ll, { color: '#fff', weight: 8, opacity: .9 }).addTo(gTruck);
-  const line = L.polyline(ll, { color: c, weight: 4.5, opacity: .95, lineJoin: 'round' })
-    .addTo(gTruck)
-    .bindTooltip(`卡车 ${r.truck} · ${r.nodes.length - 2} 个停靠点 · 架次 ${r.sorties.length}`,
-                 { sticky: true });
-  // 路线中点放编号，避免只靠颜色区分
-  const mid = ll[Math.floor(ll.length / 2)];
-  L.marker(mid, {
-    icon: L.divIcon({ className: '', html: `<div class="tnum">${k}</div>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
-    interactive: false,
-  }).addTo(gTruck);
+function selectAll() {
+  const rs = current();
+  selT = new Set(rs.map((_, i) => 't' + i));
+  selS = new Set();
+  rs.forEach((r, i) => r.sorties.forEach((_, j) => selS.add(`t${i}s${j}`)));
+}
 
-  r.sorties.forEach((s, si) => {
-    const sp = s.path.map(([lon, lat]) => [lat, lon]);
-    L.polyline(sp, { color: '#fff', weight: 5, opacity: .85 }).addTo(gDrone);
-    L.polyline(sp, { color: '#E67E22', weight: 3, opacity: 1, dashArray: '7 6' })
-      .addTo(gDrone)
-      .bindTooltip(`卡车 ${r.truck} · 架次 ${si + 1} · ${s.customers.length} 个客户`, { sticky: true });
-    L.circleMarker(sp[0], { radius: 5, color: '#2E7D5A', weight: 2, fillColor: '#fff', fillOpacity: 1 })
-      .addTo(gDrone).bindTooltip('起飞', { direction: 'top' });
-    L.circleMarker(sp[sp.length - 1], { radius: 5, color: '#fff', weight: 1.5, fillColor: '#E67E22', fillOpacity: 1 })
-      .addTo(gDrone).bindTooltip('回收', { direction: 'top' });
+function renderList() {
+  const rs = current();
+  const box = document.getElementById('list');
+  box.innerHTML = rs.map((r, i) => {
+    const col = PAL[i % PAL.length];
+    const sub = r.sorties.map((s, j) => {
+      const key = `t${i}s${j}`;
+      return `<div class="row sub"><span class="sw d" style="border-top-color:${col}"></span>
+        <label><input type="checkbox" data-k="${key}" ${selS.has(key) ? 'checked' : ''}>
+        架次 ${j + 1} · ${s.customers.length} 客户</label></div>`;
+    }).join('');
+    return `<div class="row"><span class="sw" style="border-top-color:${col}"></span>
+      <label><input type="checkbox" data-t="${i}" ${selT.has('t' + i) ? 'checked' : ''}>
+      卡车 ${r.truck} · ${r.nodes.length - 2} 停靠 · ${r.sorties.length} 架次</label>
+      <button class="solo" data-solo="${i}">只看</button></div>${sub}`;
+  }).join('') || '<div class="note">该解没有可用路线</div>';
+
+  box.querySelectorAll('input[data-t]').forEach(el => el.onchange = e => {
+    const i = +e.target.dataset.t, on = e.target.checked;
+    if (on) selT.add('t' + i); else selT.delete('t' + i);
+    current()[i].sorties.forEach((_, j) => {
+      const k = `t${i}s${j}`;
+      if (on) selS.add(k); else selS.delete(k);
+    });
+    renderList(); draw();
   });
+  box.querySelectorAll('input[data-k]').forEach(el => el.onchange = e => {
+    const k = e.target.dataset.k;
+    if (e.target.checked) selS.add(k); else selS.delete(k);
+    draw();
+  });
+  box.querySelectorAll('button[data-solo]').forEach(el => el.onclick = e => {
+    const i = +e.currentTarget.dataset.solo;
+    selT = new Set(['t' + i]);
+    selS = new Set(current()[i].sorties.map((_, j) => `t${i}s${j}`));
+    renderList(); draw();
+  });
+}
 
-  ll.forEach(p => bounds.push(p));
-});
+// ---------- 绘制
+function draw() {
+  gRoute.clearLayers();
+  if (mode === 'overlay') { drawSol(I, true, true); drawSol(F, false); }
+  else drawSol(mode === 'initial' ? I : F, false);
+}
 
-DATA.nfz.forEach(z => {
-  L.circle([z.center[1], z.center[0]], { radius: z.r, color: '#C0392B', weight: 1,
-    fillColor: '#C0392B', fillOpacity: .1 }).addTo(gNfz);
-});
+function drawSol(sol, ghost, ignoreSel) {
+  sol.routes.forEach((r, i) => {
+    // 叠加模式下初始解整体作为背景，不跟随勾选（两套解的卡车编号不能一一对应）
+    if (!ignoreSel && !selT.has('t' + i)) return;
+    const col = ghost ? '#9AA0A6' : PAL[i % PAL.length];
+    const ll = r.path.map(([lon, lat]) => [lat, lon]);
+    L.polyline(ll, { color: '#fff', weight: ghost ? 5 : 8, opacity: .85 }).addTo(gRoute);
+    L.polyline(ll, {
+      color: col, weight: ghost ? 3 : 4.5, opacity: ghost ? .85 : .95,
+      dashArray: ghost ? '4 4' : null, lineJoin: 'round',
+    }).addTo(gRoute)
+      .bindTooltip(`${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · ${r.nodes.length - 2} 停靠 · ${r.sorties.length} 架次`,
+                   { sticky: true });
 
+    if (!ghost) {
+      const mid = ll[Math.floor(ll.length / 2)];
+      L.marker(mid, { interactive: false, icon: L.divIcon({ className: '',
+        html: `<div style="background:${col};color:#fff;border-radius:9px;font-size:11px;line-height:16px;
+          text-align:center;width:18px;height:18px;border:1.5px solid #fff;font-weight:600">${i + 1}</div>`,
+        iconSize: [18, 18], iconAnchor: [9, 9] }) }).addTo(gRoute);
+    }
+
+    r.sorties.forEach((s, j) => {
+      if (!ignoreSel && !selS.has(`t${i}s${j}`)) return;
+      const sp = s.path.map(([lon, lat]) => [lat, lon]);
+      L.polyline(sp, { color: '#fff', weight: 5, opacity: .8 }).addTo(gRoute);
+      L.polyline(sp, { color: ghost ? '#9AA0A6' : col, weight: 3, opacity: 1,
+        dashArray: ghost ? '3 4' : DASH[j % DASH.length] }).addTo(gRoute)
+        .bindTooltip(`${ghost ? '初始解 · ' : ''}卡车 ${r.truck} · 架次 ${j + 1} · ${s.customers.length} 客户`,
+                     { sticky: true });
+      if (!ghost) {
+        L.circleMarker(sp[0], { radius: 4.5, color: col, weight: 2, fillColor: '#fff', fillOpacity: 1 })
+          .addTo(gRoute).bindTooltip('起飞', { direction: 'top' });
+        L.circleMarker(sp[sp.length - 1], { radius: 4.5, color: '#fff', weight: 1.5,
+          fillColor: col, fillOpacity: 1 }).addTo(gRoute).bindTooltip('回收', { direction: 'top' });
+      }
+    });
+  });
+}
+
+// ---------- 固定图层
+DATA.nfz.forEach(z => L.circle([z.center[1], z.center[0]], {
+  radius: z.r, color: '#C0392B', weight: 1, fillColor: '#C0392B', fillOpacity: .1 }).addTo(gNfz));
 L.circleMarker([DATA.depot[1], DATA.depot[0]], { radius: 8, color: '#fff', weight: 2.5,
   fillColor: '#111', fillOpacity: 1 }).addTo(gPts).bindPopup('depot（配送中心）');
-DATA.customers.forEach(p => {
-  L.circleMarker([p[1], p[0]], { radius: 3.6, color: '#fff', weight: 1,
-    fillColor: '#C0392B', fillOpacity: .95 }).addTo(gPts);
-});
+DATA.customers.forEach(p => L.circleMarker([p[1], p[0]], { radius: 3.4, color: '#fff',
+  weight: 1, fillColor: '#C0392B', fillOpacity: .95 }).addTo(gPts));
 
-if (bounds.length) map.fitBounds(bounds, { padding: [44, 44] });
+const allPts = [];
+F.routes.forEach(r => r.path.forEach(p => allPts.push([p[1], p[0]])));
+if (allPts.length) map.fitBounds(allPts, { padding: [44, 44] });
 else map.setView([DATA.depot[1], DATA.depot[0]], 13);
+
+// ---------- 事件
+const noteEl = document.getElementById('note');
+const setNote = () => {
+  noteEl.textContent = mode === 'overlay'
+    ? '叠加：灰色虚线是初始解，彩色实线是最终解；勾选作用于「最终解」的卡车与架次。'
+    : mode === 'initial' ? '当前显示初始可行解（未优化）。勾选可单独查看某辆车。'
+    : '当前显示 ALNS 最终解。勾选左侧可只保留部分卡车/架次。';
+};
+
+document.querySelectorAll('.modes button').forEach(b => b.onclick = () => {
+  mode = b.dataset.mode;
+  document.querySelectorAll('.modes button').forEach(x => x.classList.toggle('on', x === b));
+  selectAll(); renderList(); draw(); setNote();
+});
+document.getElementById('all').onclick = () => { selectAll(); renderList(); draw(); };
+document.getElementById('none').onclick = () => { selT.clear(); selS.clear(); renderList(); draw(); };
+document.getElementById('inv').onclick = () => {
+  const rs = current();
+  const nextT = new Set(rs.map((_, i) => 't' + i).filter(k => !selT.has(k)));
+  rs.forEach((r, i) => r.sorties.forEach((_, j) => {
+    const k = `t${i}s${j}`;
+    if (selS.has(k)) selS.delete(k); else selS.add(k);
+  }));
+  selT = nextT;
+  renderList(); draw();
+};
+
+selectAll(); renderList(); draw(); setNote();
 </script>
 </body></html>
 """
@@ -348,7 +471,7 @@ def write_html(payload: dict) -> Path:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="导出可贴到高德地图的解")
+    ap = argparse.ArgumentParser(description="导出可贴到高德地图的解（含初始/最终对比）")
     ap.add_argument("--set", type=int, default=112)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--iters", type=int, default=2000)
@@ -357,9 +480,9 @@ def main() -> None:
 
     print("求解并导出…")
     payload = build_payload(a.set, a.seed, a.iters)
+    print(f"  初始解 {payload['initial']['cost']} → 最终解 {payload['final']['cost']}")
     html = write_html(payload)
     print(f"  {html.relative_to(PROJECT_ROOT)}")
-    print(f"  {WEB.joinpath(f'solution_set{a.set}.json').relative_to(PROJECT_ROOT)}")
     if a.static:
         key = os.environ.get("AMAP_KEY")
         if not key:
