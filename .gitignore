@@ -53,3 +53,9 @@ data/tianhe/tiles/
 
 # 高德 JS API 页面含 Key / 安全密钥，仅本地生成，不入库
 docs/web/*_amap.html
+
+# ---- 密钥文件 ----
+# .env 里放高德等 API key，只在本地存在；.env.example 是字段模板，可以提交
+.env
+.env.*
+!.env.example

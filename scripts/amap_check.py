@@ -1,4 +1,4 @@
-"""拿高德「距离测量」核对天河算例的路网距离（需要 AMAP_KEY 环境变量）。
+"""拿高德「距离测量」核对天河算例的路网距离（需要 .env 里的 AMAP_KEY）。
 
 ## 为什么单独做这一步
 
@@ -15,23 +15,24 @@
   所以每次抓取都记时间戳，且只用于校验，不进主算例。
 - **批量**：`v3/distance` 的 `origins` 最多 100 个坐标对，`destination` 只有一个，
   所以一个 n×n 矩阵要 n 次请求（每次 100 起点 → 1 终点，n>100 时分批）。
-- **Key**：绝不要写进代码或提交。用 `AMAP_KEY` 环境变量。
+- **Key**：从项目根目录 `.env` 读（`AMAP_KEY`），或用同名环境变量临时覆盖；
+  代码里不放 key，`.env` 不入库（见 `src/env.py`）。
 
 用法：
-    AMAP_KEY=xxx python -m scripts.amap_check
-    AMAP_KEY=xxx python -m scripts.amap_check --every 5   # 每 5 个节点取一个终点
+    python -m scripts.amap_check                # 读 .env 里的 AMAP_KEY
+    python -m scripts.amap_check --every 5      # 每 5 个节点取一个终点
 """
 
 from __future__ import annotations
 
 import argparse
 import math
-import os
 import time
 
 import numpy as np
 import pandas as pd
 
+from src.env import require
 from src.io import PROJECT_ROOT
 from src.io_tianhe import load_tianhe_base
 
@@ -47,9 +48,7 @@ def main() -> None:
     ap.add_argument("--sleep", type=float, default=0.12, help="两次请求的间隔（秒）")
     a = ap.parse_args()
 
-    key = os.environ.get("AMAP_KEY")
-    if not key:
-        raise SystemExit("未设置 AMAP_KEY 环境变量（不要把 key 写进代码或提交）")
+    key = require("AMAP_KEY", "高德 vs OSM 抽样校验")
 
     base = load_tianhe_base(a.base)
     n = len(base.nodes)

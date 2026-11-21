@@ -21,7 +21,6 @@ import argparse
 import heapq
 import json
 import math
-import os
 import time
 import urllib.parse
 import urllib.request
@@ -32,6 +31,7 @@ from scipy.spatial import cKDTree
 
 from src.alns import solve
 from src.amap import wgs84_to_gcj02
+from src.env import get, mask
 from src.evaluator import _simulate_route, evaluate
 from src.generator import build_instance
 from src.initial import build_initial
@@ -814,7 +814,7 @@ def main() -> None:
     ap.add_argument("--iters", type=int, default=2000)
     ap.add_argument("--static", action="store_true", help="同时用 Web服务 Key 出静态图")
     ap.add_argument("--amap-js", action="store_true",
-                    help="额外生成高德 JS API 版本（读 AMAP_JS_KEY / AMAP_JS_SECRET，产物不入库）")
+                    help="额外生成高德 JS API 版本（Key 读 .env 的 AMAP_JS_KEY / AMAP_JS_SECRET，产物不入库）")
     a = ap.parse_args()
 
     print("求解并导出…")
@@ -823,16 +823,17 @@ def main() -> None:
     html = write_html(payload)
     print(f"  {html.relative_to(PROJECT_ROOT)}")
     if a.amap_js:
-        jk, js = os.environ.get("AMAP_JS_KEY"), os.environ.get("AMAP_JS_SECRET")
+        jk, js = get("AMAP_JS_KEY"), get("AMAP_JS_SECRET")
         if not (jk and js):
-            print("  未设置 AMAP_JS_KEY / AMAP_JS_SECRET，跳过 JS API 版本")
+            print("  .env 里没有 AMAP_JS_KEY / AMAP_JS_SECRET，跳过 JS API 版本"
+                  "（模板见 .env.example）")
         else:
             out = write_amap_html(payload, jk, js)
-            print(f"  {out.relative_to(PROJECT_ROOT)}（含 Key，已 gitignore）")
+            print(f"  {out.relative_to(PROJECT_ROOT)}（含 Key {mask(jk)}，已 gitignore）")
     if a.static:
-        key = os.environ.get("AMAP_KEY")
+        key = get("AMAP_KEY")
         if not key:
-            print("  未设置 AMAP_KEY，跳过静态图")
+            print("  .env 里没有 AMAP_KEY，跳过静态图（模板见 .env.example）")
         else:
             static_map(payload, key)
 

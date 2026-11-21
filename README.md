@@ -187,6 +187,35 @@ python -m src.generator
 
 未配置 Gurobi 时，除 `scripts.run_milp` 与 10 项标记为 `slow` 的测试外，其余功能均可运行。
 
+### 5.1 API Key 配置（高德，可选）
+
+只有调用高德接口的功能需要 Key：`scripts/amap_check`（交叉校验）、
+`scripts.build_tianhe --matrix amap`（高德距离矩阵）、`scripts.export_web --static/--amap-js`
+（静态图与 JS API 页面）。其余功能（含 OSM 路网构建、全部求解与实验）都不需要。
+
+Key 放在项目根目录的 **`.env`**，代码里不出现明文：
+
+```bash
+cp .env.example .env        # Windows: copy .env.example .env
+# 然后编辑 .env，填入三行
+```
+
+| 变量 | 用途 | 申请平台 |
+|---|---|---|
+| `AMAP_KEY` | `v3/distance` 距离矩阵、`v3/staticmap` 静态图 | Web 服务 |
+| `AMAP_JS_KEY` | 浏览器端加载地图 SDK | Web端(JS API) |
+| `AMAP_JS_SECRET` | JS API 2.0 的安全密钥，与上一项成对 | 同上 |
+
+读取逻辑在 `src/env.py`，优先级为 **进程环境变量 > `.env` > 代码默认值**，因此临时覆盖
+不需要改文件：
+
+```bash
+AMAP_KEY=另一个key python -m scripts.amap_check     # 仅本次生效
+```
+
+`.env` 已加入 `.gitignore`（`.env.example` 是字段模板，会入库）。缺 Key 时的报错会直接指出
+去 `.env` 里填哪一项，而不是抛 `KeyError`。日志里只打印脱敏后的 `c276…d3a8`。
+
 ## 6. 使用
 
 ```bash
@@ -223,6 +252,7 @@ pytest -q -m "not slow"    # 290 项快速测试
 ## 7. 项目结构
 
 ```
+.env.example      密钥字段模板（复制成 .env 使用；.env 不入库）
 configs/          模型与算例参数（TOML）
 data/instances/   16 个基准算例 + 4 个天河算例（JSON）
 data/tianhe/      天河底图矩阵与抓取元数据（原始路网不入库）

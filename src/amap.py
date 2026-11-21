@@ -11,17 +11,20 @@
 因此本模块只用于交叉校验或“某时刻快照”，不作为可复现的默认数据源；默认仍是
 OSM + 本地 Dijkstra（见 `scripts/build_tianhe.py`）。
 
-Key 从环境变量 `AMAP_KEY` 读，不写进代码、不提交。
+**Key 从哪来**：项目根目录的 `.env`（见 `src/env.py`），或进程环境变量 `AMAP_KEY`
+（临时覆盖）。代码里不放任何 key；`.env` 在 `.gitignore` 里。
 """
 
 from __future__ import annotations
 
+
 import json
 import math
-import os
 import time
 import urllib.parse
 import urllib.request
+
+from .env import mask, require
 
 import numpy as np
 
@@ -83,10 +86,11 @@ def _query(origins: list[tuple[float, float]], dest: tuple[float, float], key: s
 def distance_matrix(latlon: list[tuple[float, float]], key: str | None = None,
                     sleep: float = 0.12, verbose: bool = False) -> tuple[np.ndarray, np.ndarray]:
     """WGS-84 经纬度序列 → (距离 m, 时间 s)，都是 n×n 有向矩阵。"""
-    key = key or os.environ.get("AMAP_KEY")
-    if not key:
-        raise RuntimeError("未设置 AMAP_KEY 环境变量")
+    key = key or require("AMAP_KEY", "高德距离矩阵查询")
     n = len(latlon)
+    if verbose:
+        # 只打印首尾，日志里不出现完整 key
+        print(f"  高德 Key {mask(key)} · {n}×{n} 矩阵 · 约 {n} 次请求")
     # 参数是 (经度, 纬度)。写反了高德只会回 INVALID_PARAMS，不告诉你哪里错，所以先自己查。
     for lon, lat in latlon:
         if not (70 < lon < 140 and 0 < lat < 60):

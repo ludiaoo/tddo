@@ -36,6 +36,7 @@ REQUIRED = {
                    "fig12_mission_count.png"],
 }
 DOCS = ["README.md", "LICENSE", "CITATION.cff", ".github/workflows/ci.yml",
+        ".env.example", "src/env.py",
         "docs/项目书.md", "docs/成果整合.md", "docs/求职_项目经历.md",
         "docs/工程手册.md",
         "docs/设计笔记/README.md", "docs/设计笔记/结论总览.md",
@@ -77,6 +78,14 @@ def main() -> None:
         hit = (PROJECT_ROOT / name).exists()
         ok = ok and hit
         print(f"  {'✓' if hit else '✗'} 文档    {name}")
+
+    print("\n[密钥配置]")
+    from src.env import env_file_status
+    st = env_file_status()
+    if st["exists"]:
+        print(f"  ✓ .env 存在，已填：{', '.join(st['keys']) or '（空）'}（值不打印）")
+    else:
+        print("  · 没有 .env（只有高德相关命令需要；模板见 .env.example）")
 
     print("\n[一致性] golden_check …", end=" ", flush=True)
     r = subprocess.run([sys.executable, "-m", "scripts.golden_check"],
