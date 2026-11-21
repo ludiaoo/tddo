@@ -386,21 +386,61 @@ def check() -> None:
         assert 1.0 <= np.median(ratio) <= 3.0, "卡车/无人机绕行倍数异常"
 
 
+def plot(which: int = 104) -> None:
+    """把路网与算例节点画在一张图上，肉眼确认「点确实落在天河的路上」。"""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+
+    from src import style  # noqa: F401  （统一字体/配色）
+    from src.io_tianhe import load_tianhe_base
+
+    coord, edges = load_graph()
+    keep, _ = _largest_scc(len({e[0] for e in edges} | {e[1] for e in edges}), edges)
+    segs = [(coord[u], coord[v]) for u, v, _, _ in edges[:120000]]
+    src_id = next(k for k, v in MAPPING.items() if v == which)
+    base = load_tianhe_base(f"set{src_id:02d}")
+    lon = [n.lon for n in base.nodes]
+    lat = [n.lat for n in base.nodes]
+
+    fig, ax = plt.subplots(figsize=(5.2, 5.2))
+    ax.add_collection(LineCollection([[(a[1], a[0]), (b[1], b[0])] for a, b in segs],
+                                     colors="#DDDDDD", linewidths=0.35, zorder=1))
+    ax.scatter(lon[1:], lat[1:], s=14, c="#C0392B", zorder=3, label="customer")
+    ax.scatter([lon[0]], [lat[0]], s=90, marker="s", c="#1F4E79", zorder=4, label="depot")
+    ax.set_aspect(1 / math.cos(math.radians(sum(lat) / len(lat))))
+    ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.3f}"))
+    ax.yaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:.3f}"))
+    ax.set_xlabel("longitude"); ax.set_ylabel("latitude")
+    ax.set_title(f"Set{which}: {len(base.nodes) - 1} customers on Tianhe road network",
+                 fontsize=9)
+    ax.legend(loc="lower right", fontsize=7)
+    fig.tight_layout()
+    out = ROOT / "results" / "figs" / f"tianhe_set{which}.png"
+    fig.savefig(out, dpi=220, bbox_inches="tight")
+    plt.close(fig)
+    print(f"  {out.relative_to(ROOT)}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="天河真实路网算例构建")
-    ap.add_argument("--step", choices=["fetch", "build", "check", "all"], default="all")
+    ap.add_argument("--step", choices=["fetch", "build", "check", "plot", "all"], default="all")
     ap.add_argument("--only", default=None, help="只重建这些新编号，逗号分隔（如 101,102）")
     a = ap.parse_args()
     only = {int(x) for x in a.only.split(",")} if a.only else None
     if a.step in ("fetch", "all"):
-        print("[1/3] 拉取路网")
+        print("[1/4] 拉取路网")
         fetch()
     if a.step in ("build", "all"):
-        print("[2/3] 建图并生成算例")
+        print("[2/4] 建图并生成算例")
         build(only)
     if a.step in ("check", "all"):
-        print("[3/3] 体检")
+        print("[3/4] 体检")
         check()
+    if a.step in ("plot", "all"):
+        print("[4/4] 出图")
+        plot()
 
 
 if __name__ == "__main__":
