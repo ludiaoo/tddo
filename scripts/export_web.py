@@ -220,32 +220,37 @@ HTML = """<!doctype html>
   html,body{margin:0;height:100%;font:14px/1.5 system-ui,"Microsoft YaHei",sans-serif;color:#222}
   #map{position:absolute;inset:0}
   .panel{position:absolute;top:14px;left:14px;z-index:999;background:#fff;border:1px solid #e3e3e3;
-         border-radius:8px;padding:12px 14px;min-width:260px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+         border-radius:8px;padding:12px 14px;min-width:268px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
   .panel h1{font-size:15px;margin:0 0 8px}
   .panel table{border-collapse:collapse;font-size:12.5px}
   .panel td{padding:1px 10px 1px 0;color:#555;white-space:nowrap}
   .panel b{color:#111}
   .legend{position:absolute;right:14px;bottom:14px;z-index:999;background:#fff;border:1px solid #e3e3e3;
           border-radius:8px;padding:10px 12px;font-size:12.5px;box-shadow:0 2px 12px rgba(0,0,0,.1)}
-  .legend div{margin:3px 0}
-  .sw{display:inline-block;width:22px;border-top:3px solid #1F4E79;vertical-align:middle;margin-right:6px}
-  .sw.d{border-top:2px dashed #C0392B}
-  .sw.n{border-top:0;width:12px;height:12px;border-radius:50%;background:rgba(192,57,43,.15);
-        border:1px solid #C0392B;vertical-align:-2px;margin-right:6px}
-  .note{font-size:11.5px;color:#999;margin-top:8px;line-height:1.45}
+  .legend div{margin:4px 0;display:flex;align-items:center;gap:7px}
+  .lg-truck{width:24px;border-top:4px solid #1F4E79;border-radius:2px}
+  .lg-drone{width:24px;border-top:3px dashed #E67E22}
+  .lg-l{width:10px;height:10px;border-radius:50%;border:2px solid #2E7D5A;background:#fff}
+  .lg-r{width:9px;height:9px;background:#E67E22;border:1px solid #fff;box-sizing:border-box}
+  .lg-nfz{width:12px;height:12px;border-radius:50%;border:1px solid #C0392B;background:rgba(192,57,43,.15)}
+  .note{font-size:11.5px;color:#999;margin-top:8px;line-height:1.5}
+  .tnum{background:#1F4E79;color:#fff;border-radius:9px;font-size:11px;line-height:16px;
+        text-align:center;width:18px;height:18px;border:1.5px solid #fff;font-weight:600}
 </style></head>
 <body>
 <div id="map"></div>
 <div class="panel">
   <h1>天河算例 · 卡车与无人机路线</h1>
   <table id="stats"></table>
-  <div class="note">卡车折线取自真实路网最短路；无人机架次为示意直线。
-  底图与坐标均为 GCJ-02，与高德一致。</div>
+  <div class="note">卡车为实线并按车编号；无人机为橙色虚线，绿圈起飞、橙方块回收。
+  右下角图例可对照，右上角可开关图层与切换底图。</div>
 </div>
 <div class="legend">
-  <div><span class="sw"></span>卡车路径（沿路网）</div>
-  <div><span class="sw d"></span>无人机架次</div>
-  <div><span class="sw n"></span>禁飞区</div>
+  <div><span class="lg-truck"></span>卡车路径（实线，编号 1–n）</div>
+  <div><span class="lg-drone"></span>无人机架次（虚线）</div>
+  <div><span class="lg-l"></span>架次起飞点</div>
+  <div><span class="lg-r"></span>架次回收点</div>
+  <div><span class="lg-nfz"></span>禁飞区</div>
 </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -261,41 +266,71 @@ const rows = [
 document.getElementById('stats').innerHTML =
   rows.map(([k, v]) => `<tr><td>${k}</td><td><b>${v}</b></td></tr>`).join('');
 
-// 高德栅格瓦片（GCJ-02）。style=8 是标准路网图，与 api.amap.com 的底图一致。
 const amap = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',
   { subdomains: '1234', maxZoom: 18, attribution: '&copy; 高德地图' });
 const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   { maxZoom: 19, attribution: '&copy; OpenStreetMap' });
 
 const map = L.map('map', { layers: [amap], zoomControl: true });
-L.control.layers({ '高德': amap, 'OSM（WGS-84 参考）': osm }, null, { position: 'topright' }).addTo(map);
+
+const gTruck = L.layerGroup().addTo(map);
+const gDrone = L.layerGroup().addTo(map);
+const gNfz   = L.layerGroup().addTo(map);
+const gPts   = L.layerGroup().addTo(map);
+L.control.layers(
+  { '高德底图': amap, 'OSM 底图（坐标参考）': osm },
+  { '卡车路径': gTruck, '无人机架次': gDrone, '禁飞区': gNfz, '客户点': gPts },
+  { position: 'topright', collapsed: false }).addTo(map);
 
 const palette = ['#1F4E79','#2E7D5A','#8E5A9E','#B26A00','#2A6F7F','#7A4E2D'];
 const bounds = [];
+let k = 0;
+
 DATA.routes.forEach((r, i) => {
+  k += 1;
   const c = palette[i % palette.length];
-  L.polyline(r.path.map(([lon, lat]) => [lat, lon]),
-    { color: c, weight: 4, opacity: .9, lineJoin: 'round' }).addTo(map).bindTooltip('卡车 ' + r.truck);
-  r.sorties.forEach(s => {
-    L.polyline(s.path.map(([lon, lat]) => [lat, lon]),
-      { color: '#C0392B', weight: 2, opacity: .85, dashArray: '6 5' }).addTo(map);
+  const ll = r.path.map(([lon, lat]) => [lat, lon]);
+  // 白色描边打底：两条路线重合时也能分出层次
+  L.polyline(ll, { color: '#fff', weight: 8, opacity: .9 }).addTo(gTruck);
+  const line = L.polyline(ll, { color: c, weight: 4.5, opacity: .95, lineJoin: 'round' })
+    .addTo(gTruck)
+    .bindTooltip(`卡车 ${r.truck} · ${r.nodes.length - 2} 个停靠点 · 架次 ${r.sorties.length}`,
+                 { sticky: true });
+  // 路线中点放编号，避免只靠颜色区分
+  const mid = ll[Math.floor(ll.length / 2)];
+  L.marker(mid, {
+    icon: L.divIcon({ className: '', html: `<div class="tnum">${k}</div>`, iconSize: [18, 18], iconAnchor: [9, 9] }),
+    interactive: false,
+  }).addTo(gTruck);
+
+  r.sorties.forEach((s, si) => {
+    const sp = s.path.map(([lon, lat]) => [lat, lon]);
+    L.polyline(sp, { color: '#fff', weight: 5, opacity: .85 }).addTo(gDrone);
+    L.polyline(sp, { color: '#E67E22', weight: 3, opacity: 1, dashArray: '7 6' })
+      .addTo(gDrone)
+      .bindTooltip(`卡车 ${r.truck} · 架次 ${si + 1} · ${s.customers.length} 个客户`, { sticky: true });
+    L.circleMarker(sp[0], { radius: 5, color: '#2E7D5A', weight: 2, fillColor: '#fff', fillOpacity: 1 })
+      .addTo(gDrone).bindTooltip('起飞', { direction: 'top' });
+    L.circleMarker(sp[sp.length - 1], { radius: 5, color: '#fff', weight: 1.5, fillColor: '#E67E22', fillOpacity: 1 })
+      .addTo(gDrone).bindTooltip('回收', { direction: 'top' });
   });
-  r.path.forEach(([lon, lat]) => bounds.push([lat, lon]));
+
+  ll.forEach(p => bounds.push(p));
 });
 
 DATA.nfz.forEach(z => {
   L.circle([z.center[1], z.center[0]], { radius: z.r, color: '#C0392B', weight: 1,
-    fillColor: '#C0392B', fillOpacity: .1 }).addTo(map);
+    fillColor: '#C0392B', fillOpacity: .1 }).addTo(gNfz);
 });
 
-L.circleMarker([DATA.depot[1], DATA.depot[0]], { radius: 8, color: '#fff', weight: 2,
-  fillColor: '#1F4E79', fillOpacity: 1 }).addTo(map).bindPopup('depot');
-DATA.customers.forEach((p, i) => {
-  L.circleMarker([p[1], p[0]], { radius: 4, color: '#fff', weight: 1,
-    fillColor: '#C0392B', fillOpacity: 1 }).addTo(map);
+L.circleMarker([DATA.depot[1], DATA.depot[0]], { radius: 8, color: '#fff', weight: 2.5,
+  fillColor: '#111', fillOpacity: 1 }).addTo(gPts).bindPopup('depot（配送中心）');
+DATA.customers.forEach(p => {
+  L.circleMarker([p[1], p[0]], { radius: 3.6, color: '#fff', weight: 1,
+    fillColor: '#C0392B', fillOpacity: .95 }).addTo(gPts);
 });
 
-if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+if (bounds.length) map.fitBounds(bounds, { padding: [44, 44] });
 else map.setView([DATA.depot[1], DATA.depot[0]], 13);
 </script>
 </body></html>
