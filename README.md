@@ -264,7 +264,7 @@ AMAP_KEY=另一个key python -m scripts.amap_check     # 仅本次生效
 ```
 
 `.env` 已加入 `.gitignore`（`.env.example` 是字段模板，会入库）。缺 Key 时的报错会直接指出
-去 `.env` 里填哪一项，而不是抛 `KeyError`。日志里只打印脱敏后的 `c276…d3a8`。
+去 `.env` 里填哪一项，而不是抛 `KeyError`。日志里只打印脱敏后的 `abcd…9012`。
 
 ### 5.2 模型与算法配置（`configs/`）
 
