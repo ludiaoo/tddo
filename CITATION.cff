@@ -5,18 +5,16 @@ abstract: >-
   rendezvous, bidirectional loads and time-dependent circular no-fly zones.
   The model is a 79-constraint MILP solved at realistic scale by a custom ALNS,
   with Gurobi used to certify small instances. The project contributes a
-  corrected rendezvous formulation (splitting the single recover-or-launch flag
-  into separate arrival and departure variables, which lowers the proven optimum
-  on 4/4 small instances) and a boundary analysis of the resulting cost
-  reduction across hover-energy pricing, swap duration, battery stock, instance
-  form and spatial layout.
+  rendezvous formulation with separated arrival and departure variables and a
+  boundary analysis of the resulting cost reduction across hover-energy pricing,
+  swap duration, battery stock, instance form and spatial layout.
 authors:
   - name: ludiaoo
     affiliation: "Independent researcher"
 version: 1.0.0
 date-released: 2026-11-11
 license: MIT
-repository-code: "https://github.com/ludiaoo/truck-drone-optimizer"
+repository-code: "https://github.com/ludiaoo/tddo"
 keywords:
   - vehicle routing
   - truck-drone tandem
