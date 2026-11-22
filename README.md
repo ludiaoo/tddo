@@ -322,11 +322,11 @@ pytest -q -m "not slow"
 
 ```bash
 docker build -t tddo:latest .
-docker run --rm tddo:latest tddo --help
+docker run --rm tddo:latest --help
 
 # 数据与结果挂载进容器；密钥用 --env-file，不写进镜像
 docker run --rm -v "%cd%/data:/app/data" -v "%cd%/results:/app/results" \
-  --env-file .env tddo:latest tddo solve --set 104 --iters 300
+  --env-file .env tddo:latest solve --set 104 --iters 300
 ```
 
 镜像里不含 83 MB 算例底图、`.env` 与 Gurobi 许可证；精确求解时再挂载 `GRB_LICENSE_FILE`。

@@ -18,8 +18,8 @@ RUN pip install --no-cache-dir . && \
     tddo --version
 
 # 原始算例 83 MB、高德 Key、Gurobi 许可证均不写入镜像：
-#   docker run --rm -v "%cd%/data:/app/data" --env-file .env tddo:latest tddo doctor
-#   docker run --rm -v "%cd%/results:/app/results" tddo:latest tddo solve --set 104 --iters 300
+#   docker run --rm -v "%cd%/data:/app/data" --env-file .env tddo:latest doctor
+#   docker run --rm -v "%cd%/results:/app/results" tddo:latest solve --set 104 --iters 300
 
 ENTRYPOINT ["tddo"]
 CMD ["--help"]

@@ -50,5 +50,5 @@ jobs:
       - name: Docker build
         run: |
           docker build -t tddo:ci .
-          docker run --rm tddo:ci tddo --version
-          docker run --rm tddo:ci tddo --help | head -5
+          docker run --rm tddo:ci --version
+          docker run --rm tddo:ci --help | head -5
